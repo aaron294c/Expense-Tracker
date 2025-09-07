@@ -1,9 +1,35 @@
 // /lib/supabaseServer.ts
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
-import { Database } from '@/src/types/supabase';
+import { createServerClient } from '@supabase/ssr'
+import { NextApiRequest, NextApiResponse } from 'next'
+import { GetServerSidePropsContext } from 'next'
+import { Database } from '@/src/types/supabase'
 
-export const createServerClient = () => {
-  const cookieStore = cookies();
-  return createServerComponentClient<Database>({ cookies: () => cookieStore });
-};
+export const createServerSupabaseClient = (
+  context: GetServerSidePropsContext | { req: NextApiRequest; res: NextApiResponse }
+) => {
+  return createServerClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return context.req.cookies[name]
+        },
+        set(name: string, value: string, options: any) {
+          context.res.setHeader('Set-Cookie', [
+            `${name}=${value}; ${Object.entries(options)
+              .map(([k, v]) => `${k}=${v}`)
+              .join('; ')}`
+          ])
+        },
+        remove(name: string, options: any) {
+          context.res.setHeader('Set-Cookie', [
+            `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${Object.entries(options)
+              .map(([k, v]) => `${k}=${v}`)
+              .join('; ')}`
+          ])
+        },
+      },
+    }
+  )
+}
