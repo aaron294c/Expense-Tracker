@@ -1,10 +1,22 @@
-// /hooks/useHousehold.ts
+// hooks/useHousehold.ts
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabaseBrowser';
-import { Database } from '@/src/types/supabase';
+import { supabase } from '../Lib/supabaseBrowser';
 
-type Household = Database['public']['Tables']['households']['Row'];
-type HouseholdMember = Database['public']['Tables']['household_members']['Row'] & {
+// Define types inline since we might not have the full type system set up yet
+type Household = {
+  id: string;
+  name: string;
+  base_currency: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type HouseholdMember = {
+  id: string;
+  household_id: string;
+  user_id: string;
+  role: 'owner' | 'editor' | 'viewer';
+  joined_at: string;
   households?: Household;
 };
 

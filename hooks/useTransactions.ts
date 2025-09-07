@@ -1,4 +1,4 @@
-// /hooks/useTransactions.ts
+// hooks/useTransactions.ts
 import { useState, useEffect, useCallback } from 'react';
 
 interface TransactionCategory {
