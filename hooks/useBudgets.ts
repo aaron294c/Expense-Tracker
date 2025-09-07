@@ -1,286 +1,307 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { supabase as getClient } from '@/lib/supabaseBrowser'
+// hooks/useBudgets.ts (Updated)
+import { useState, useEffect, useCallback } from 'react';
+import type { API, Hooks } from '@/types/app.contracts';
 
-type BurnRate = {
-  spent: number
-  budget: number
-  remaining: number
-  daily_average: number
-  daily_burn_rate: number
-  projected_monthly_spend: number
-  remaining_days: number
-  suggested_daily_spend: number
-}
+export function useBudgets(householdId: string | null, month: string): Hooks.UseBudgetsReturn {
+  const [data, setData] = useState<API.BudgetData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-type CategoryItem = {
-  household_id: string
-  month: string
-  category_id: string
-  category_name: string
-  category_kind: 'expense'|'income'
-  icon: string | null
-  color: string | null
-  budget: number
-  spent: number
-  earned: number
-  remaining: number
-  budget_percentage: number
-  transaction_count: number
-  rollover_enabled: boolean | null
-}
-
-type BudgetsData = {
-  burn_rate: BurnRate | null
-  categories: CategoryItem[]
-}
-
-function monthRangeUTC(monthInput: string | Date) {
-  const d = new Date(
-    typeof monthInput === 'string'
-      ? (monthInput.length === 7 ? `${monthInput}-01` : monthInput)
-      : monthInput
-  )
-  const start = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1))
-  const end   = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1))
-  return { start, end }
-}
-function firstOfMonthDate(monthInput: string | Date): string {
-  const d = new Date(
-    typeof monthInput === 'string'
-      ? (monthInput.length === 7 ? `${monthInput}-01` : monthInput)
-      : monthInput
-  )
-  const iso = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1))
-  return iso.toISOString().slice(0, 10) // YYYY-MM-DD
-}
-
-export function useBudgets(householdId: string, month: string | Date) {
-  const [data, setData] = useState<BudgetsData | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  // Support either a factory export or a ready client export
-  const client = useMemo(() => {
-    // @ts-expect-error runtime guard to support either pattern
-    return typeof getClient === 'function' ? getClient() : getClient
-  }, [])
-
-  const { start, end } = useMemo(() => monthRangeUTC(month), [month])
-  const monthFirst = useMemo(() => firstOfMonthDate(month), [month])
-
-  const fetchAll = useCallback(async () => {
+  const fetchBudgets = useCallback(async () => {
     if (!householdId) {
-      setData({ burn_rate: null, categories: [] })
-      setIsLoading(false)
-      return
+      setData(null);
+      setIsLoading(false);
+      return;
     }
+
     try {
-      setIsLoading(true)
-      setError(null)
+      setIsLoading(true);
+      setError(null);
 
-      // Fetch categories summary for the month
-      const catQuery = client
-        .from('v_monthly_category_summary')
-        .select('*')
-        .eq('household_id', householdId)
-        .gte('month', start.toISOString())
-        .lt('month', end.toISOString())
-        .order('category_name', { ascending: true })
+      const params = new URLSearchParams({
+        household_id: householdId,
+        month: month
+      });
 
-      // Fetch burn rate for the month (may be empty)
-      const burnQuery = client
-        .from('v_simple_burn_rate')
-        .select('*')
-        .eq('household_id', householdId)
-        .gte('month', start.toISOString())
-        .lt('month', end.toISOString())
-        .maybeSingle()
+      const response = await fetch(`/api/budgets?${params}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch budgets');
+      }
 
-      const [{ data: cats, error: catErr }, { data: burn, error: burnErr }] =
-        await Promise.all([catQuery, burnQuery])
+      const result: API.BudgetsResponse = await response.json();
+      setData(result.data);
 
-      if (catErr) throw catErr
-      if (burnErr) throw burnErr
-
-      const categories: CategoryItem[] = (cats ?? []).map((r: any) => ({
-        household_id: r.household_id,
-        month: r.month,
-        category_id: r.category_id,
-        category_name: r.category_name,
-        category_kind: r.category_kind,
-        icon: r.icon ?? null,
-        color: r.color ?? null,
-        budget: Number(r.budget ?? 0),
-        spent: Number(r.spent ?? 0),
-        earned: Number(r.earned ?? 0),
-        remaining: Number(r.remaining ?? 0),
-        budget_percentage: Number(r.budget_percentage ?? 0),
-        transaction_count: Number(r.transaction_count ?? 0),
-        rollover_enabled: r.rollover_enabled ?? null,
-      }))
-
-      const burn_rate: BurnRate | null = burn
-        ? {
-            spent: Number(burn.spent ?? 0),
-            budget: Number(burn.budget ?? 0),
-            remaining: Number(burn.remaining ?? 0),
-            daily_average: Number(burn.daily_average ?? 0),
-            daily_burn_rate: Number(burn.daily_burn_rate ?? 0),
-            projected_monthly_spend: Number(burn.projected_monthly_spend ?? 0),
-            remaining_days: Number(burn.remaining_days ?? 0),
-            suggested_daily_spend: Number(burn.suggested_daily_spend ?? 0),
-          }
-        : null
-
-      setData({ burn_rate, categories })
-    } catch (e: any) {
-      console.error(e)
-      setError(e?.message ?? 'Failed to load budgets')
-      setData({ burn_rate: null, categories: [] })
+    } catch (err) {
+      console.error('Error fetching budgets:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch budgets');
+      setData(null);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [client, householdId, start, end])
+  }, [householdId, month]);
+
+  const updateBudgets = useCallback(async (
+    budgets: { category_id: string; amount: number; rollover_enabled?: boolean }[]
+  ): Promise<boolean> => {
+    if (!householdId) return false;
+
+    try {
+      setError(null);
+
+      const response = await fetch('/api/budgets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          month: month,
+          category_budgets: budgets
+        } satisfies API.CreateBudgetRequest),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update budgets');
+      }
+
+      // Refresh data after successful update
+      await fetchBudgets();
+      return true;
+
+    } catch (err) {
+      console.error('Error updating budgets:', err);
+      setError(err instanceof Error ? err.message : 'Failed to update budgets');
+      return false;
+    }
+  }, [householdId, month, fetchBudgets]);
+
+  const applyRollover = useCallback(async (
+    fromMonth: string,
+    toMonth: string
+  ): Promise<boolean> => {
+    if (!householdId) return false;
+
+    try {
+      setError(null);
+
+      const response = await fetch('/api/budgets?action=rollover', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from_month: fromMonth,
+          to_month: toMonth,
+          household_id: householdId
+        } satisfies API.ApplyRolloverRequest),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to apply rollover');
+      }
+
+      // Refresh data if we're viewing the target month
+      if (month === toMonth) {
+        await fetchBudgets();
+      }
+      
+      return true;
+
+    } catch (err) {
+      console.error('Error applying rollover:', err);
+      setError(err instanceof Error ? err.message : 'Failed to apply rollover');
+      return false;
+    }
+  }, [householdId, month, fetchBudgets]);
 
   useEffect(() => {
-    fetchAll()
-  }, [fetchAll])
+    fetchBudgets();
+  }, [fetchBudgets]);
 
-  /**
-   * Upsert budget lines for the selected month.
-   * `updates`: [{ category_id, amount, rollover_enabled }]
-   */
-  const updateBudgets = useCallback(
-    async (updates: Array<{ category_id: string; amount: number; rollover_enabled?: boolean }>) => {
-      if (!householdId) return false
+  return {
+    data,
+    isLoading,
+    error,
+    refetch: fetchBudgets,
+    updateBudgets,
+    applyRollover
+  };
+}
 
-      // 1) Ensure budget_period exists
-      const { data: bpRow, error: bpErr } = await client
-        .from('budget_periods')
-        .upsert(
-          [{ household_id: householdId, month: monthFirst }],
-          { onConflict: 'household_id,month' }
+// hooks/useTransactions.ts (Updated with optimistic updates)
+import { useState, useEffect, useCallback } from 'react';
+import type { API, Hooks, TransactionWithDetails } from '@/types/app.contracts';
+
+export function useTransactions(
+  householdId: string | null,
+  initialFilters: API.TransactionFilters = {}
+): Hooks.UseTransactionsReturn {
+  const [transactions, setTransactions] = useState<TransactionWithDetails[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [filters, setFilters] = useState<API.TransactionFilters>({
+    limit: 20,
+    offset: 0,
+    ...initialFilters
+  });
+
+  const fetchTransactions = useCallback(async (reset = false) => {
+    if (!householdId) {
+      setTransactions([]);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      const params = new URLSearchParams({
+        household_id: householdId,
+        ...Object.fromEntries(
+          Object.entries(filters).map(([key, value]) => [key, String(value)])
         )
-        .select('id')
-        .single()
+      });
 
-      if (bpErr) {
-        console.error('ensure budget_period', bpErr)
-        setError(bpErr.message)
-        return false
+      const response = await fetch(`/api/transactions?${params}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch transactions');
       }
 
-      // 2) Upsert budgets for that period
-      const rows = updates.map(u => ({
-        period_id: bpRow.id,
-        category_id: u.category_id,
-        amount: Number.isFinite(u.amount) ? u.amount : 0,
-        rollover_enabled: u.rollover_enabled ?? true,
-      }))
+      const result: API.TransactionsResponse = await response.json();
+      const newTransactions = result.data || [];
 
-      const { error: budErr } = await client
-        .from('budgets')
-        .upsert(rows, { onConflict: 'period_id,category_id' })
-
-      if (budErr) {
-        console.error('upsert budgets', budErr)
-        setError(budErr.message)
-        return false
+      if (reset) {
+        setTransactions(newTransactions);
+      } else {
+        setTransactions(prev => [...prev, ...newTransactions]);
       }
 
-      await fetchAll()
-      return true
-    },
-    [client, householdId, monthFirst, fetchAll]
-  )
+      setHasMore(result.pagination?.hasMore || false);
 
-  /**
-   * Apply rollover from `fromMonth` -> `toMonth`:
-   * For categories with rollover_enabled=true, add last month’s positive `remaining`
-   * to this month’s budget (create period/lines as needed).
-   */
-  const applyRollover = useCallback(
-    async (fromMonth: string | Date, toMonth: string | Date) => {
-      if (!householdId) return false
+    } catch (err) {
+      console.error('Error fetching transactions:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch transactions');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [householdId, filters]);
 
-      const { start: fStart, end: fEnd } = monthRangeUTC(fromMonth)
-      const toFirst = firstOfMonthDate(toMonth)
+  const refetch = useCallback(async () => {
+    setFilters(prev => ({ ...prev, offset: 0 }));
+    await fetchTransactions(true);
+  }, [fetchTransactions]);
 
-      // 1) Read previous-month remaining + rollover flags from the view
-      const { data: prevCats, error: prevErr } = await client
-        .from('v_monthly_category_summary')
-        .select('category_id, remaining, rollover_enabled')
-        .eq('household_id', householdId)
-        .gte('month', fStart.toISOString())
-        .lt('month', fEnd.toISOString())
+  const loadMore = useCallback(async () => {
+    if (!hasMore || isLoading) return;
+    
+    setFilters(prev => ({
+      ...prev,
+      offset: (prev.offset || 0) + (prev.limit || 20)
+    }));
+  }, [hasMore, isLoading]);
 
-      if (prevErr) {
-        console.error('read previous month', prevErr)
-        setError(prevErr.message)
-        return false
+  const createTransaction = useCallback(async (
+    data: API.CreateTransactionRequest
+  ): Promise<TransactionWithDetails | null> => {
+    try {
+      setError(null);
+
+      // Optimistic update - add temporary transaction
+      const tempTransaction: TransactionWithDetails = {
+        id: `temp-${Date.now()}`,
+        household_id: householdId!,
+        account_id: data.account_id,
+        account_name: 'Loading...', // Will be updated when real response comes
+        user_id: 'current-user',
+        occurred_at: data.occurred_at || new Date().toISOString(),
+        description: data.description,
+        merchant: data.merchant || null,
+        amount: data.amount,
+        direction: data.direction,
+        currency: data.currency || 'USD',
+        attachment_url: data.attachment_url || null,
+        created_at: new Date().toISOString(),
+        categories: data.categories?.map(cat => ({
+          category_id: cat.category_id,
+          category_name: 'Loading...',
+          icon: '',
+          color: '',
+          weight: cat.weight
+        })) || [],
+        primary_category_name: 'Loading...',
+        primary_category_icon: ''
+      };
+
+      setTransactions(prev => [tempTransaction, ...prev]);
+
+      const response = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        // Remove optimistic update on error
+        setTransactions(prev => prev.filter(t => t.id !== tempTransaction.id));
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create transaction');
       }
 
-      // 2) Ensure target period exists
-      const { data: toBp, error: toBpErr } = await client
-        .from('budget_periods')
-        .upsert([{ household_id: householdId, month: toFirst }], { onConflict: 'household_id,month' })
-        .select('id')
-        .single()
+      const result = await response.json();
+      const newTransaction = result.data;
 
-      if (toBpErr) {
-        console.error('ensure target period', toBpErr)
-        setError(toBpErr.message)
-        return false
-      }
+      // Replace optimistic update with real data
+      setTransactions(prev => 
+        prev.map(t => t.id === tempTransaction.id ? newTransaction : t)
+      );
+      
+      return newTransaction;
 
-      // 3) Fetch existing budgets for target period to add onto amounts
-      const { data: toBudgets, error: tErr } = await client
-        .from('budgets')
-        .select('category_id, amount')
-        .eq('period_id', toBp.id)
+    } catch (err) {
+      console.error('Error creating transaction:', err);
+      setError(err instanceof Error ? err.message : 'Failed to create transaction');
+      return null;
+    }
+  }, [householdId]);
 
-      if (tErr) {
-        console.error('read target budgets', tErr)
-        setError(tErr.message)
-        return false
-      }
+  const updateFilters = useCallback((newFilters: API.TransactionFilters) => {
+    setFilters(prev => ({
+      ...prev,
+      ...newFilters,
+      offset: 0 // Reset offset when filters change
+    }));
+  }, []);
 
-      const existing = new Map<string, number>()
-      for (const b of toBudgets ?? []) existing.set(b.category_id, Number(b.amount ?? 0))
+  // Fetch transactions when filters change
+  useEffect(() => {
+    fetchTransactions(true);
+  }, [filters.household_id, filters.account_id, filters.category_id, filters.date_from, filters.date_to, filters.search]);
 
-      const rows = (prevCats ?? [])
-        .filter((r: any) => r.rollover_enabled === true && Number(r.remaining ?? 0) > 0)
-        .map((r: any) => {
-          const prevRem = Number(r.remaining ?? 0)
-          const base    = existing.get(r.category_id) ?? 0
-          return {
-            period_id: toBp.id,
-            category_id: r.category_id,
-            amount: base + prevRem,
-            rollover_enabled: true,
-          }
-        })
+  // Load more when offset changes (but not on initial load)
+  useEffect(() => {
+    if (filters.offset && filters.offset > 0) {
+      fetchTransactions(false);
+    }
+  }, [filters.offset]);
 
-      if (rows.length === 0) {
-        await fetchAll()
-        return true
-      }
-
-      const { error: upErr } = await client
-        .from('budgets')
-        .upsert(rows, { onConflict: 'period_id,category_id' })
-
-      if (upErr) {
-        console.error('apply rollover upsert', upErr)
-        setError(upErr.message)
-        return false
-      }
-
-      await fetchAll()
-      return true
-    },
-    [client, householdId, fetchAll]
-  )
-
-  return { data, isLoading, error, updateBudgets, applyRollover }
+  return {
+    transactions,
+    isLoading,
+    error,
+    hasMore,
+    refetch,
+    loadMore,
+    createTransaction,
+    setFilters: updateFilters,
+    filters
+  };
 }
