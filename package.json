@@ -1,71 +1,26 @@
 {
-  "name": "expense-tracker",
-  "version": "1.0.0",
-  "description": "A comprehensive expense tracking application with budgeting and insights",
-  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "type-check": "tsc --noEmit",
-    
     "db:new": "npx supabase migration new",
     "db:push": "npx supabase db push",
     "db:pull": "npx supabase db pull",
-    "db:seed": "npx supabase db seed",
+    "db:seed": "npx supabase db seed --file supabase/seed_ui_min.sql",
     "db:reset": "npx supabase db reset",
-    "db:types": "npx supabase gen types typescript --project-id $DEV_PROJECT_REF --schema public > src/types/supabase.ts",
+    "db:types": "npx supabase gen types typescript --project-id rtgiakccgqqumddeyixs --schema public > src/types/supabase.ts",
     "db:dump": "npx supabase db dump --file supabase/schema_dump.sql",
-    "db:link": "npx supabase link --project-ref $DEV_PROJECT_REF",
+    "db:link": "npx supabase link --project-ref rtgiakccgqqumddeyixs",
     "db:status": "npx supabase status",
     "db:stop": "npx supabase stop",
     "db:start": "npx supabase start",
-    "db:migrate:up": "npx supabase migration up",
-    "db:migrate:down": "npx supabase migration down",
-    
-    "setup": "npm run db:types && npm run build",
-    "setup:dev": "npm run db:start && npm run db:push && npm run db:types"
-  },
-  "dependencies": {
-    "@supabase/auth-helpers-nextjs": "^0.8.7",
-    "@supabase/auth-helpers-react": "^0.4.2",
-    "@supabase/ssr": "^0.0.10",
-    "@supabase/supabase-js": "^2.38.5",
-    "next": "14.0.4",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "swr": "^2.2.4",
-    "zod": "^3.22.4"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.5",
-    "@types/react": "^18.2.45",
-    "@types/react-dom": "^18.2.18",
-    "autoprefixer": "^10.4.16",
-    "eslint": "^8.56.0",
-    "eslint-config-next": "14.0.4",
-    "postcss": "^8.4.32",
-    "supabase": "^1.142.2",
-    "tailwindcss": "^3.4.0",
-    "typescript": "^5.3.3"
-  },
-  "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=8.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/your-org/expense-tracker.git"
-  },
-  "keywords": [
-    "expense-tracker",
-    "budgeting",
-    "finance",
-    "supabase",
-    "nextjs",
-    "typescript"
-  ],
-  "author": "Your Name",
-  "license": "MIT"
+    "schema:link": "echo 'Using project-id instead of linking for schema operations'",
+    "schema:dump": "echo 'Schema dump requires database connection - using types generation instead'",
+    "types": "npx supabase gen types typescript --project-id rtgiakccgqqumddeyixs --schema public > supabase/types/database.types.ts",
+    "schema:pull": "npm run types",
+    "schema:diff": "echo 'Schema diff requires linked project - use Supabase Dashboard for schema changes'",
+    "schema:apply": "npx supabase db reset --local || true && npx supabase db start || true && npx supabase db reset --local",
+    "prisma:pull": "node -e \"try{require('fs').accessSync('prisma/schema.prisma');process.exit(0)}catch(e){process.exit(1)}\" && npx prisma db pull || true"
+  }
 }

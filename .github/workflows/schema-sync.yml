@@ -1,0 +1,66 @@
+name: Schema Sync
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    - cron: "0 2 * * *" # 02:00 UTC nightly
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Supabase CLI
+        run: npm i -g supabase
+
+      - name: Link Supabase
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Create directories
+        run: mkdir -p supabase/schema supabase/types supabase/migrations
+
+      - name: Dump schema snapshot
+        run: supabase db dump --schema public --linked -f supabase/schema/current.sql
+
+      - name: Generate TS types
+        run: supabase gen types typescript --project-id "$SUPABASE_PROJECT_REF" > supabase/types/database.types.ts
+
+      - name: Prisma db pull (if present)
+        run: |
+          if [ -f prisma/schema.prisma ]; then
+            npm install
+            npm i -D prisma @prisma/client
+            npx prisma db pull
+          fi
+
+      - name: Create PR if changed
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(schema): nightly sync schema snapshot & types"
+          branch: chore/schema-sync
+          title: "chore(schema): nightly sync schema snapshot & types"
+          body: |
+            🤖 **Automated nightly sync from Supabase**
+            
+            This PR contains:
+            - Updated schema snapshot: `supabase/schema/current.sql`
+            - Regenerated TypeScript types: `supabase/types/database.types.ts`
+            - Updated Prisma schema (if applicable)
+            
+            **⚠️ Review Changes**
+            - Check that schema changes are expected
+            - Verify type definitions are correct
+            - Test locally before merging
+            
+            **Auto-generated on:** $(date -u)
+          delete-branch: true
+          token: ${{ secrets.GITHUB_TOKEN }}

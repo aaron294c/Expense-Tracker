@@ -1,0 +1,54 @@
+{
+  "name": "Expense Tracker Dev",
+  "image": "mcr.microsoft.com/devcontainers/typescript-node:1-20-bullseye",
+  
+  "features": {
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/node:1": {
+      "nodeGypDependencies": true,
+      "version": "20"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-typescript-next",
+        "bradlc.vscode-tailwindcss",
+        "esbenp.prettier-vscode",
+        "ms-vscode.vscode-json"
+      ],
+      "settings": {
+        "typescript.preferences.includePackageJsonAutoImports": "on"
+      }
+    }
+  },
+
+  "postCreateCommand": "npm install && npm run schema:pull",
+  
+  "forwardPorts": [3000, 54321, 54322, 54323],
+  "portsAttributes": {
+    "3000": {
+      "label": "Next.js App",
+      "onAutoForward": "notify"
+    },
+    "54321": {
+      "label": "Supabase API"
+    },
+    "54322": {
+      "label": "Supabase DB"
+    },
+    "54323": {
+      "label": "Supabase Studio"
+    }
+  },
+
+  "mounts": [
+    "source=${localWorkspaceFolder}/.env.local,target=${containerWorkspaceFolder}/.env.local,type=bind,consistency=cached"
+  ],
+
+  "remoteEnv": {
+    "SUPABASE_PROJECT_REF": "rtgiakccgqqumddeyixs",
+    "SUPABASE_URL": "https://rtgiakccgqqumddeyixs.supabase.co"
+  }
+}
