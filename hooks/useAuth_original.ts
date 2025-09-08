@@ -8,6 +8,7 @@ interface AuthContextType extends Hooks.UseAuthReturn {}
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const auth = useAuthLogic();
   return <AuthContext.Provider value={auth}>{children}</AuthContext.Provider>;
 }
 

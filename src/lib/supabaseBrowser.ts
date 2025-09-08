@@ -1,6 +1,6 @@
-// Lib/supabaseBrowser.ts  
+// src/lib/supabaseBrowser.ts
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { Database } from '../src/types/supabase';
+import { Database } from '../types/supabase';
 
 export function createClient() {
   return createClientComponentClient<Database>();

@@ -1,7 +1,15 @@
-// hooks/useTransactions.ts (Enhanced version)
+// hooks/useTransactions.ts
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabaseBrowser';
-import { useAuth } from '@/components/auth/AuthProvider';
+import { supabase } from '../lib/supabaseBrowser';
+import { useAuth } from '../components/auth/AuthProvider';
+
+interface TransactionCategory {
+  category_id: string;
+  category_name: string;
+  icon: string;
+  color: string;
+  weight: number;
+}
 
 interface Transaction {
   id: string;
@@ -15,17 +23,21 @@ interface Transaction {
   amount: number;
   direction: 'inflow' | 'outflow';
   currency: string;
+  attachment_url: string | null;
+  created_at: string;
   categories: TransactionCategory[];
   primary_category_name: string;
   primary_category_icon: string;
 }
 
-interface TransactionCategory {
-  category_id: string;
-  category_name: string;
-  icon: string;
-  color: string;
-  weight: number;
+interface TransactionFilters {
+  account_id?: string;
+  category_id?: string;
+  date_from?: string;
+  date_to?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
 }
 
 interface CreateTransactionData {
@@ -36,19 +48,29 @@ interface CreateTransactionData {
   amount: number;
   direction: 'inflow' | 'outflow';
   currency?: string;
+  attachment_url?: string;
   categories?: {
     category_id: string;
     weight: number;
   }[];
 }
 
-export function useTransactions(householdId: string | null) {
+export function useTransactions(
+  householdId: string | null,
+  initialFilters: TransactionFilters = {}
+) {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
+  const [hasMore, setHasMore] = useState(true);
+  const [filters, setFilters] = useState<TransactionFilters>({
+    limit: 20,
+    offset: 0,
+    ...initialFilters
+  });
 
-  const fetchTransactions = useCallback(async () => {
+  const fetchTransactions = useCallback(async (reset = false) => {
     if (!householdId || !user) {
       setTransactions([]);
       setIsLoading(false);
@@ -59,27 +81,56 @@ export function useTransactions(householdId: string | null) {
       setIsLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/transactions?household_id=${householdId}`, {
-        headers: {
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
-        },
+      const params = new URLSearchParams({
+        household_id: householdId,
+        ...Object.fromEntries(
+          Object.entries(filters).map(([key, value]) => [key, String(value)])
+        )
       });
 
+      const response = await fetch(`/api/transactions?${params}`);
+      
       if (!response.ok) {
-        throw new Error('Failed to fetch transactions');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch transactions');
       }
 
       const result = await response.json();
-      setTransactions(result.data || []);
+      const newTransactions = result.data || [];
+
+      if (reset) {
+        setTransactions(newTransactions);
+      } else {
+        setTransactions(prev => [...prev, ...newTransactions]);
+      }
+
+      setHasMore(result.pagination?.hasMore || false);
+
     } catch (err) {
       console.error('Error fetching transactions:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch transactions');
     } finally {
       setIsLoading(false);
     }
-  }, [householdId, user]);
+  }, [householdId, user, filters]);
 
-  const createTransaction = useCallback(async (data: CreateTransactionData) => {
+  const refetch = useCallback(async () => {
+    setFilters(prev => ({ ...prev, offset: 0 }));
+    await fetchTransactions(true);
+  }, [fetchTransactions]);
+
+  const loadMore = useCallback(async () => {
+    if (!hasMore || isLoading) return;
+    
+    setFilters(prev => ({
+      ...prev,
+      offset: (prev.offset || 0) + (prev.limit || 20)
+    }));
+  }, [hasMore, isLoading]);
+
+  const createTransaction = useCallback(async (
+    data: CreateTransactionData
+  ): Promise<Transaction | null> => {
     if (!user) throw new Error('User not authenticated');
 
     try {
@@ -89,7 +140,6 @@ export function useTransactions(householdId: string | null) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`,
         },
         body: JSON.stringify(data),
       });
@@ -102,48 +152,47 @@ export function useTransactions(householdId: string | null) {
       const result = await response.json();
       const newTransaction = result.data;
 
-      // Optimistically update the UI
+      // Add to the beginning of the list
       setTransactions(prev => [newTransaction, ...prev]);
       
       return newTransaction;
+
     } catch (err) {
+      console.error('Error creating transaction:', err);
       setError(err instanceof Error ? err.message : 'Failed to create transaction');
-      throw err;
+      return null;
     }
   }, [user]);
 
+  const updateFilters = useCallback((newFilters: TransactionFilters) => {
+    setFilters(prev => ({
+      ...prev,
+      ...newFilters,
+      offset: 0 // Reset offset when filters change
+    }));
+  }, []);
+
+  // Fetch transactions when filters change
   useEffect(() => {
-    fetchTransactions();
-  }, [fetchTransactions]);
+    fetchTransactions(true);
+  }, [filters.household_id, filters.account_id, filters.category_id, filters.date_from, filters.date_to, filters.search]);
 
-  // Real-time subscription
+  // Load more when offset changes (but not on initial load)
   useEffect(() => {
-    if (!householdId) return;
-
-    const subscription = supabase
-      .channel(`transactions_${householdId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'transactions',
-          filter: `household_id=eq.${householdId}`
-        },
-        () => {
-          fetchTransactions();
-        }
-      )
-      .subscribe();
-
-    return () => subscription.unsubscribe();
-  }, [householdId, fetchTransactions]);
+    if (filters.offset && filters.offset > 0) {
+      fetchTransactions(false);
+    }
+  }, [filters.offset]);
 
   return {
     transactions,
     isLoading,
     error,
-    refetch: fetchTransactions,
+    hasMore,
+    refetch,
+    loadMore,
     createTransaction,
+    setFilters: updateFilters,
+    filters
   };
 }

@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'SF Pro Display', system-ui, sans-serif;
+  }
+  
+  body {
+    @apply text-gray-900 bg-gray-50;
+  }
+}
+
+@layer components {
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  .card {
+    @apply bg-white rounded-xl border border-gray-100 shadow-sm;
+  }
+  
+  .section-header {
+    @apply text-lg font-semibold text-gray-900 mb-4;
+  }
+}
+
+@layer utilities {
+  .animate-counter {
+    animation: counter 1.5s ease-out forwards;
+  }
+  
+  @keyframes counter {
+    from {
+      --value: 0;
+    }
+    to {
+      --value: 100;
+    }
+  }
+}

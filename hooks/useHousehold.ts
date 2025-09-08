@@ -1,36 +1,24 @@
 // hooks/useHousehold.ts
 import { useState, useEffect } from 'react';
-import { supabase } from '../Lib/supabaseBrowser';
+import { supabase } from '../lib/supabaseBrowser';
+import { useAuth } from '../components/auth/AuthProvider';
 
-// Define types inline since we might not have the full type system set up yet
-type Household = {
+interface Household {
   id: string;
   name: string;
   base_currency: string;
-  created_at: string;
-  updated_at: string;
-};
-
-type HouseholdMember = {
-  id: string;
-  household_id: string;
-  user_id: string;
-  role: 'owner' | 'editor' | 'viewer';
-  joined_at: string;
-  households?: Household;
-};
-
-interface UseHouseholdReturn {
-  households: Household[];
-  currentHousehold: Household | null;
-  userMemberships: HouseholdMember[];
-  isLoading: boolean;
-  error: string | null;
-  setCurrentHousehold: (household: Household | null) => void;
-  refetch: () => Promise<void>;
 }
 
-export function useHousehold(): UseHouseholdReturn {
+interface HouseholdMember {
+  household_id: string;
+  user_id: string;
+  role: string;
+  joined_at: string;
+  households?: Household;
+}
+
+export function useHousehold() {
+  const { user } = useAuth();
   const [households, setHouseholds] = useState<Household[]>([]);
   const [currentHousehold, setCurrentHousehold] = useState<Household | null>(null);
   const [userMemberships, setUserMemberships] = useState<HouseholdMember[]>([]);
@@ -38,6 +26,14 @@ export function useHousehold(): UseHouseholdReturn {
   const [error, setError] = useState<string | null>(null);
 
   const fetchHouseholds = async () => {
+    if (!user) {
+      setHouseholds([]);
+      setCurrentHousehold(null);
+      setUserMemberships([]);
+      setIsLoading(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setError(null);
@@ -49,6 +45,7 @@ export function useHousehold(): UseHouseholdReturn {
           *,
           households (*)
         `)
+        .eq('user_id', user.id)
         .order('joined_at', { ascending: false });
 
       if (membershipError) {
@@ -79,10 +76,12 @@ export function useHousehold(): UseHouseholdReturn {
 
   useEffect(() => {
     fetchHouseholds();
-  }, []);
+  }, [user]);
 
   // Subscribe to real-time updates for household memberships
   useEffect(() => {
+    if (!user) return;
+
     const subscription = supabase
       .channel('household_updates')
       .on(
@@ -112,7 +111,7 @@ export function useHousehold(): UseHouseholdReturn {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [user]);
 
   return {
     households,
