@@ -1,6 +1,5 @@
-// hooks/useCategorySummary.ts
+// /hooks/useCategorySummary.ts
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../Lib/supabaseBrowser';
 
 interface CategorySummary {
   household_id: string;
@@ -39,7 +38,7 @@ export function useCategorySummary(
   const [error, setError] = useState<string | null>(null);
 
   const fetchSummaries = useCallback(async () => {
-    if (!householdId) {
+    if (!householdId || !month) {
       setSummaries([]);
       setIsLoading(false);
       return;
@@ -49,18 +48,15 @@ export function useCategorySummary(
       setIsLoading(true);
       setError(null);
 
-      const { data, error: queryError } = await supabase
-        .from('v_monthly_category_summary')
-        .select('*')
-        .eq('household_id', householdId)
-        .eq('month', month)
-        .order('spent', { ascending: false });
-
-      if (queryError) {
-        throw queryError;
+      // Use API route instead of direct Supabase query to bypass RLS issues
+      const response = await fetch(`/api/category-summary?household_id=${householdId}&month=${month}`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      setSummaries(data || []);
+      const data = await response.json();
+      setSummaries(data.summaries || []);
 
     } catch (err) {
       console.error('Error fetching category summaries:', err);
@@ -110,53 +106,6 @@ export function useCategorySummary(
   useEffect(() => {
     fetchSummaries();
   }, [fetchSummaries]);
-
-  // Subscribe to real-time updates
-  useEffect(() => {
-    if (!householdId) return;
-
-    const subscription = supabase
-      .channel(`category_summary_${householdId}_${month}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'transactions',
-          filter: `household_id=eq.${householdId}`
-        },
-        () => {
-          fetchSummaries();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'budgets'
-        },
-        () => {
-          fetchSummaries();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'transaction_categories'
-        },
-        () => {
-          fetchSummaries();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, [householdId, month, fetchSummaries]);
 
   return {
     summaries,

@@ -1,153 +1,79 @@
-// /pages/login.tsx
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/router'
-import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
-import Layout from '@/components/Layout'
+import { useState } from 'react';
+import { useRouter } from 'next/router';
+import { supabase } from '@/Lib/supabaseBrowser';
 
-export default function LoginPage() {
-  const router = useRouter()
-  const user = useUser()
-  const supabase = useSupabaseClient()
-  
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [isSignUp, setIsSignUp] = useState(false)
+export default function Login() {
+  const router = useRouter();
+  const [email, setEmail] = useState('test.user+ux@demo.local');
+  const [password, setPassword] = useState('demo-password-123');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (user) {
-      router.replace('/dashboard')
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password
+    });
+
+    if (error) {
+      setError(error.message);
+    } else {
+      router.push('/dashboard');
     }
-  }, [user, router])
-
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError('')
-
-    try {
-      if (isSignUp) {
-        const { error } = await supabase.auth.signUp({
-          email,
-          password,
-        })
-        
-        if (error) throw error
-        
-        // After signup, try to join demo household
-        try {
-          await fetch('/api/setup/demo', { method: 'POST' })
-        } catch (demoError) {
-          console.warn('Failed to join demo household:', demoError)
-        }
-        
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
-        
-        if (error) throw error
-      }
-    } catch (error: any) {
-      setError(error.message || 'Authentication failed')
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  if (user) {
-    return null // Will redirect
-  }
+    setLoading(false);
+  };
 
   return (
-    <Layout title="Login - Expense Tracker" showNavigation={false}>
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white rounded-2xl shadow-lg p-8">
-            <div className="text-center mb-8">
-              <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="material-symbols-outlined text-white text-2xl">
-                  account_balance_wallet
-                </span>
-              </div>
-              <h1 className="text-2xl font-bold text-gray-900">
-                {isSignUp ? 'Create Account' : 'Welcome Back'}
-              </h1>
-              <p className="text-gray-600 mt-2">
-                {isSignUp 
-                  ? 'Start tracking your expenses today'
-                  : 'Sign in to your account'
-                }
-              </p>
-            </div>
-
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-6">
-                {error}
-              </div>
-            )}
-
-            <form onSubmit={handleAuth} className="space-y-6">
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
-                </label>
-                <input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter your email"
-                />
-              </div>
-
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  minLength={6}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Enter your password"
-                />
-              </div>
-
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-blue-700 transition-colors"
-              >
-                {isLoading 
-                  ? 'Please wait...' 
-                  : (isSignUp ? 'Create Account' : 'Sign In')
-                }
-              </button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <button
-                onClick={() => setIsSignUp(!isSignUp)}
-                className="text-blue-600 hover:text-blue-700 font-medium"
-              >
-                {isSignUp 
-                  ? 'Already have an account? Sign in'
-                  : "Don't have an account? Sign up"
-                }
-              </button>
-            </div>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="max-w-md w-full bg-white rounded-lg shadow-md p-8">
+        <h1 className="text-2xl font-bold text-center mb-8">ExpenseTracker</h1>
+        
+        <form onSubmit={handleLogin} className="space-y-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              required
+            />
           </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md"
+              required
+            />
+          </div>
+
+          {error && (
+            <div className="text-red-600 text-sm">{error}</div>
+          )}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center text-sm text-gray-600">
+          <p>Demo Account:</p>
+          <p>Email: test.user+ux@demo.local</p>
+          <p>Password: demo-password-123</p>
         </div>
       </div>
-    </Layout>
-  )
+    </div>
+  );
 }
