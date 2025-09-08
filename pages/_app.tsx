@@ -1,16 +1,16 @@
-// pages/_app.tsx
 import type { AppProps } from 'next/app';
 import { AuthProvider } from '@/components/auth/AuthProvider';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { AppLayout } from '@/components/layout/AppLayout';
 import '@/styles/globals.css';
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <div className="min-h-screen bg-gray-50">
+        <AppLayout>
           <Component {...pageProps} />
-        </div>
+        </AppLayout>
       </AuthProvider>
     </ErrorBoundary>
   );

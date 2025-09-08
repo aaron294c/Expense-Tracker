@@ -1,97 +1,46 @@
-/* styles/globals.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  html {
-    font-family: 'SF Pro Display', 'SF Pro Text', system-ui, sans-serif;
-  }
-  
-  body {
-    @apply bg-gray-50 text-gray-900;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
+  html, body {
+    @apply font-sans;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-all duration-200 transform active:scale-95 shadow-sm;
-  }
-  
-  .btn-secondary {
-    @apply bg-white text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-50 transition-all duration-200 transform active:scale-95 border border-gray-200 shadow-sm;
-  }
-  
-  .input-field {
-    @apply w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all;
+    @apply bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 transition-colors;
   }
   
   .card {
-    @apply bg-white rounded-2xl p-6 shadow-sm border border-gray-100;
+    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4;
+  }
+  
+  .input-field {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
   }
   
   .nav-item {
-    @apply flex flex-col items-center gap-1 py-2 px-3 rounded-lg transition-colors;
+    @apply flex flex-col items-center gap-1 p-2 rounded-lg transition-colors text-gray-500 hover:text-gray-700;
   }
   
   .nav-item.active {
     @apply text-blue-600;
   }
   
-  .nav-item:not(.active) {
-    @apply text-gray-500 hover:text-gray-700;
-  }
-}
-
-@layer utilities {
-  .animate-slide-up {
-    animation: slide-up 0.3s ease-out;
-  }
-  
   .animate-fade-in {
-    animation: fade-in 0.2s ease-out;
+    animation: fade-in 0.3s ease-in-out;
   }
-  
-  .animate-scale-in {
-    animation: scale-in 0.2s ease-out;
-  }
-}
-
-@keyframes slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes scale-in {
-  from { transform: scale(0.95); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
-}
-
-/* Mobile-first responsive design */
-@media (max-width: 768px) {
-  .mobile-hidden {
-    display: none;
+  from {
+    opacity: 0;
+    transform: translateY(10px);
   }
-}
-
-/* Smooth scrolling for better UX */
-* {
-  scroll-behavior: smooth;
-}
-
-/* Loading states */
-.skeleton {
-  @apply bg-gray-200 animate-pulse rounded;
-}
-
-/* Focus styles for accessibility */
-.focus-visible {
-  @apply ring-2 ring-blue-500 ring-offset-2 outline-none;
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

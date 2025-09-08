@@ -1,4 +1,3 @@
-// pages/index.tsx
 import { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -16,7 +15,11 @@ export default function Home() {
   }, [user, isLoading, router]);
 
   if (isLoading) {
-    return <LoadingSpinner />;
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
 
   if (user) {
