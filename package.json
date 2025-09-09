@@ -7,17 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "db:new": "npx supabase migration new",
-    "db:push": "npx supabase db push",
-    "db:pull": "npx supabase db pull",
-    "db:seed": "npx supabase db seed --file supabase/seed_ui_min.sql",
-    "db:reset": "npx supabase db reset",
-    "db:types": "npx supabase gen types typescript --project-id $DEV_PROJECT_REF --schema public > src/types/supabase.ts",
-    "db:dump": "npx supabase db dump --file supabase/schema_dump.sql",
-    "db:link": "npx supabase link --project-ref $DEV_PROJECT_REF",
-    "db:status": "npx supabase status",
-    "db:stop": "npx supabase stop",
-    "db:start": "npx supabase start"
+    "db:types": "npx supabase gen types typescript --project-id rtgiakccgqqumddeyixs --schema public > supabase/types/database.types.ts"
   },
   "dependencies": {
     "@headlessui/react": "^1.7.19",
@@ -25,12 +15,15 @@
     "@supabase/auth-helpers-nextjs": "^0.8.7",
     "@supabase/auth-helpers-react": "^0.4.2",
     "@supabase/supabase-js": "^2.38.4",
+    "@supabase/ssr": "^0.1.0",
     "clsx": "^2.1.1",
     "date-fns": "^2.30.0",
+    "framer-motion": "^10.16.16",
     "next": "14.0.3",
     "react": "^18",
     "react-dom": "^18",
-    "recharts": "^2.8.0"
+    "recharts": "^2.8.0",
+    "tailwind-merge": "^2.2.0"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.10",
