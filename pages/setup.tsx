@@ -1,4 +1,5 @@
-// pages/setup.tsx - Fixed version with working demo household integration
+/ 3. Updated setup page with better error handling
+// pages/setup.tsx
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,6 +11,7 @@ export default function SetupPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [debugInfo, setDebugInfo] = useState('');
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -19,13 +21,19 @@ export default function SetupPage() {
   }, [user, authLoading, router]);
 
   const joinDemoHousehold = async () => {
-    if (!user) return;
+    if (!user) {
+      setError('No user found. Please sign in again.');
+      return;
+    }
     
     setIsLoading(true);
     setError('');
     setSuccess('');
+    setDebugInfo('Starting demo household setup...');
     
     try {
+      console.log('Joining demo household for user:', user.id);
+      
       const response = await fetch('/api/setup/demo', {
         method: 'POST',
         headers: {
@@ -34,9 +42,12 @@ export default function SetupPage() {
       });
 
       const data = await response.json();
+      
+      console.log('Demo setup response:', { status: response.status, data });
+      setDebugInfo(`Response: ${response.status} - ${JSON.stringify(data)}`);
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to join demo household');
+        throw new Error(data.error || `HTTP ${response.status}: Failed to join demo household`);
       }
 
       setSuccess('Successfully joined demo household! Redirecting...');
@@ -48,17 +59,27 @@ export default function SetupPage() {
 
     } catch (error) {
       console.error('Failed to join demo household:', error);
-      setError(error instanceof Error ? error.message : 'Failed to join demo household');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to join demo household';
+      setError(errorMessage);
+      setDebugInfo(prev => prev + '\nError: ' + errorMessage);
     } finally {
       setIsLoading(false);
     }
   };
 
   const createNewHousehold = async () => {
+    if (!user) {
+      setError('No user found. Please sign in again.');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
+    setSuccess('');
     
     try {
+      console.log('Creating new household for user:', user.id);
+      
       // First create the household
       const householdResponse = await fetch('/api/households', {
         method: 'POST',
@@ -66,33 +87,16 @@ export default function SetupPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: `${user?.email?.split('@')[0]}'s Household`,
+          name: `${user.email?.split('@')[0]}'s Household`,
           base_currency: 'USD'
         }),
       });
 
+      const householdData = await householdResponse.json();
+      console.log('Household creation response:', { status: householdResponse.status, data: householdData });
+
       if (!householdResponse.ok) {
-        const errorData = await householdResponse.json();
-        throw new Error(errorData.error || 'Failed to create household');
-      }
-
-      const { data: household } = await householdResponse.json();
-
-      // Add user as owner of the household
-      const memberResponse = await fetch('/api/household-members', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          household_id: household.id,
-          user_id: user?.id,
-          role: 'owner'
-        }),
-      });
-
-      if (!memberResponse.ok) {
-        throw new Error('Failed to add user to household');
+        throw new Error(householdData.error || 'Failed to create household');
       }
 
       setSuccess('Household created successfully! Redirecting...');
@@ -140,6 +144,16 @@ export default function SetupPage() {
           <p className="text-gray-600 mt-2">Let's get your budget set up.</p>
         </div>
 
+        {/* Debug Info */}
+        {debugInfo && (
+          <div className="text-xs bg-gray-100 p-3 rounded-lg">
+            <details>
+              <summary className="cursor-pointer font-medium">Debug Info</summary>
+              <pre className="mt-2 whitespace-pre-wrap">{debugInfo}</pre>
+            </details>
+          </div>
+        )}
+
         {/* Error Message */}
         {error && (
           <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200">
@@ -156,15 +170,16 @@ export default function SetupPage() {
 
         {/* Setup Options */}
         <div className="space-y-4">
-          <div 
-            className="card p-4 hover:shadow-md transition-shadow cursor-pointer border-2 border-transparent hover:border-green-200" 
-            onClick={!isLoading ? joinDemoHousehold : undefined}
+          <button
+            onClick={joinDemoHousehold}
+            disabled={isLoading}
+            className="w-full card p-4 hover:shadow-md transition-shadow cursor-pointer border-2 border-transparent hover:border-green-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
                 <span className="text-2xl">🎯</span>
               </div>
-              <div className="flex-1">
+              <div className="flex-1 text-left">
                 <h3 className="font-semibold text-gray-900">Join Demo Household</h3>
                 <p className="text-sm text-gray-600">Start with sample data to explore features</p>
                 <div className="text-xs text-green-600 mt-1">
@@ -173,17 +188,18 @@ export default function SetupPage() {
               </div>
               {isLoading && <LoadingSpinner size="sm" />}
             </div>
-          </div>
+          </button>
 
-          <div 
-            className="card p-4 hover:shadow-md transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-200" 
-            onClick={!isLoading ? createNewHousehold : undefined}
+          <button
+            onClick={createNewHousehold}
+            disabled={isLoading}
+            className="w-full card p-4 hover:shadow-md transition-shadow cursor-pointer border-2 border-transparent hover:border-blue-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <div className="flex items-center gap-4">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
                 <span className="text-2xl">🏗️</span>
               </div>
-              <div className="flex-1">
+              <div className="flex-1 text-left">
                 <h3 className="font-semibold text-gray-900">Create New Household</h3>
                 <p className="text-sm text-gray-600">Start fresh with your own budget</p>
                 <div className="text-xs text-blue-600 mt-1">
@@ -192,12 +208,13 @@ export default function SetupPage() {
               </div>
               {isLoading && <LoadingSpinner size="sm" />}
             </div>
-          </div>
+          </button>
         </div>
 
         {/* User Info */}
         <div className="text-center text-sm text-gray-500">
           <p>Signed in as <span className="font-medium">{user.email}</span></p>
+          <p className="text-xs">User ID: {user.id}</p>
           <button 
             onClick={handleSignOut}
             className="mt-2 text-blue-600 hover:text-blue-700 font-medium"
