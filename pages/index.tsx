@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth } from '@/contexts/AuthContext';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { useAuth } from '../contexts/AuthContext';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export default function HomePage() {
   const { user, isLoading } = useAuth();

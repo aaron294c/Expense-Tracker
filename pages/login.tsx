@@ -1,11 +1,7 @@
-// pages/login.tsx
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth } from '@/contexts/AuthContext';
-import { Button } from '@/src/components/ui/Button';
-import { Input } from '@/src/components/ui/Input';
-import { Card } from '@/src/components/ui/Card';
-import { LoadingSpinner } from '@/components/common/LoadingSpinner';
+import { useAuth } from '../contexts/AuthContext';
+import { LoadingSpinner } from '../components/common/LoadingSpinner';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,7 +16,7 @@ export default function LoginPage() {
   // Redirect if already logged in
   useEffect(() => {
     if (!authLoading && user) {
-      router.push('/dashboard/overview');
+      router.push('/dashboard');
     }
   }, [user, authLoading, router]);
 
@@ -68,7 +64,7 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md p-6">
+      <div className="card w-full max-w-md p-6">
         <div className="text-center mb-8">
           <h1 className="text-2xl font-bold text-gray-900">
             {isSignUp ? 'Create Account' : 'Welcome Back'}
@@ -79,24 +75,34 @@ export default function LoginPage() {
         </div>
 
         <form onSubmit={handleAuth} className="space-y-4">
-          <Input
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="Enter your email"
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              placeholder="Enter your email"
+              className="input-field"
+            />
+          </div>
           
-          <Input
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            placeholder="Enter your password"
-            minLength={6}
-          />
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              placeholder="Enter your password"
+              minLength={6}
+              className="input-field"
+            />
+          </div>
 
           {error && (
             <div className="text-red-600 text-sm bg-red-50 p-3 rounded-lg border border-red-200">
@@ -110,14 +116,13 @@ export default function LoginPage() {
             </div>
           )}
 
-          <Button
+          <button
             type="submit"
-            className="w-full"
-            loading={isLoading}
+            className="btn-primary w-full flex items-center justify-center"
             disabled={isLoading}
           >
-            {isSignUp ? 'Create Account' : 'Sign In'}
-          </Button>
+            {isLoading ? <LoadingSpinner size="sm" /> : (isSignUp ? 'Create Account' : 'Sign In')}
+          </button>
         </form>
 
         <div className="mt-6 text-center">
@@ -145,7 +150,7 @@ export default function LoginPage() {
             Password: demo-password-123
           </p>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }

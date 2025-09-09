@@ -1,7 +1,6 @@
-// hooks/useHousehold.ts
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseBrowser';
-import { useAuth } from '../components/auth/AuthProvider';
+import { useAuth } from '../contexts/AuthContext';
 
 interface Household {
   id: string;
@@ -76,41 +75,6 @@ export function useHousehold() {
 
   useEffect(() => {
     fetchHouseholds();
-  }, [user]);
-
-  // Subscribe to real-time updates for household memberships
-  useEffect(() => {
-    if (!user) return;
-
-    const subscription = supabase
-      .channel('household_updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'household_members'
-        },
-        () => {
-          fetchHouseholds();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'households'
-        },
-        () => {
-          fetchHouseholds();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, [user]);
 
   return {

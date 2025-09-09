@@ -1,8 +1,7 @@
-// contexts/AuthContext.tsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { useRouter } from 'next/router';
-import { supabase } from '@/lib/supabaseBrowser';
+import { supabase } from '../lib/supabaseBrowser';
 
 interface AuthContextType {
   user: User | null;
@@ -64,7 +63,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Handle redirects based on auth state
         if (event === 'SIGNED_IN' && session?.user) {
           // Redirect to dashboard after successful login
-          router.push('/dashboard/overview');
+          router.push('/dashboard');
         } else if (event === 'SIGNED_OUT') {
           // Redirect to login after logout
           router.push('/login');
