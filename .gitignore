@@ -1,39 +1,15 @@
-# Dependencies
-/node_modules
-/.pnp
-.pnp.js
-
-# Testing
-/coverage
-
-# Next.js
-/.next/
-/out/
-
-# Production
-/build
-
-# Misc
-.DS_Store
-*.pem
-
-# Debug
+# Node / Next.js
+node_modules/
+.next/
+out/
+dist/
+.vscode/
+.env*
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Local env files
-.env
-.env*.local
-
-# Vercel
-.vercel
-
-# TypeScript
-*.tsbuildinfo
-next-env.d.ts
-
-# Supabase
-supabase/.branches
-supabase/.temp
-.env.keys
+pnpm-lock.yaml
+.vercel/
+.turbo/
+coverage/
+.supabase/functions/**/node_modules/
