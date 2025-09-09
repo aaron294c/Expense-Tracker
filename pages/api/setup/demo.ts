@@ -1,31 +1,17 @@
-
-// 2. Updated API endpoint with better error handling
-// pages/api/setup/demo.ts
-import { NextApiRequest, NextApiResponse } from 'next';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+// pages/api/setup/demo.ts - Fixed demo setup endpoint
+import { NextApiResponse } from 'next';
+import { withAuth, AuthenticatedRequest } from '../../lib/auth-middleware';
 
 const DEMO_HOUSEHOLD_ID = '550e8400-e29b-41d4-a716-446655440001';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function demoHandler(req: AuthenticatedRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const supabase = createServerSupabaseClient({ req, res });
+  const { user, supabase } = req;
 
   try {
-    // Get the authenticated user
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    
-    if (authError) {
-      console.error('Auth error:', authError);
-      return res.status(401).json({ error: 'Authentication failed', details: authError.message });
-    }
-    
-    if (!user) {
-      return res.status(401).json({ error: 'No authenticated user found' });
-    }
-
     console.log('Demo setup for user:', user.id, user.email);
 
     // Check if demo household exists
@@ -35,26 +21,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .eq('id', DEMO_HOUSEHOLD_ID)
       .single();
 
-    if (householdError) {
+    if (householdError && householdError.code !== 'PGRST116') {
       console.error('Household lookup error:', householdError);
-      
-      // If household doesn't exist, create it
-      if (householdError.code === 'PGRST116') {
-        console.log('Creating demo household...');
-        const { error: createError } = await supabase
-          .from('households')
-          .insert({
-            id: DEMO_HOUSEHOLD_ID,
-            name: 'Demo Household',
-            base_currency: 'USD'
-          });
+      return res.status(500).json({ 
+        error: 'Database error', 
+        details: householdError.message 
+      });
+    }
 
-        if (createError) {
-          console.error('Failed to create household:', createError);
-          return res.status(500).json({ error: 'Failed to create demo household', details: createError.message });
-        }
-      } else {
-        return res.status(500).json({ error: 'Database error', details: householdError.message });
+    // Create household if it doesn't exist
+    if (!household) {
+      console.log('Creating demo household...');
+      const { error: createError } = await supabase
+        .from('households')
+        .insert({
+          id: DEMO_HOUSEHOLD_ID,
+          name: 'Demo Household',
+          base_currency: 'USD'
+        });
+
+      if (createError) {
+        console.error('Failed to create household:', createError);
+        return res.status(500).json({ 
+          error: 'Failed to create demo household', 
+          details: createError.message 
+        });
       }
     }
 
@@ -68,7 +59,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     if (membershipCheckError && membershipCheckError.code !== 'PGRST116') {
       console.error('Membership check error:', membershipCheckError);
-      return res.status(500).json({ error: 'Failed to check membership', details: membershipCheckError.message });
+      return res.status(500).json({ 
+        error: 'Failed to check membership', 
+        details: membershipCheckError.message 
+      });
     }
 
     if (existingMembership) {
@@ -101,24 +95,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     console.log('Successfully added user to demo household');
-
-    // Verify the membership was created
-    const { data: verifyMembership, error: verifyError } = await supabase
-      .from('household_members')
-      .select(`
-        *,
-        households (*)
-      `)
-      .eq('household_id', DEMO_HOUSEHOLD_ID)
-      .eq('user_id', user.id)
-      .single();
-
-    if (verifyError) {
-      console.error('Verification error:', verifyError);
-    } else {
-      console.log('Membership verified:', verifyMembership);
-    }
-
     return res.status(200).json({ 
       message: 'Successfully joined demo household',
       membership: newMembership
@@ -132,3 +108,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     });
   }
 }
+
+export default withAuth(demoHandler);

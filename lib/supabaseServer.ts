@@ -1,8 +1,8 @@
-// lib/supabaseServer.ts
+// lib/supabaseServer.ts - Updated server client creation
 import { createServerClient } from '@supabase/ssr'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { GetServerSidePropsContext } from 'next'
-import { Database } from '@/supabase/types/database.types'
+import { Database } from '../supabase/types/database.types'
 
 export const createServerSupabaseClient = (
   context: GetServerSidePropsContext | { req: NextApiRequest; res: NextApiResponse }
@@ -34,7 +34,7 @@ export const createServerSupabaseClient = (
   )
 }
 
-// For API routes with service role access
+// For API routes with service role access (when needed)
 export const createServiceSupabaseClient = () => {
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

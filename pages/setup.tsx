@@ -1,9 +1,9 @@
-/ 3. Updated setup page with better error handling
-// pages/setup.tsx
+// pages/setup.tsx - Updated setup page with proper auth
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { authenticatedFetch } from '../lib/api';
 
 export default function SetupPage() {
   const router = useRouter();
@@ -34,22 +34,13 @@ export default function SetupPage() {
     try {
       console.log('Joining demo household for user:', user.id);
       
-      const response = await fetch('/api/setup/demo', {
+      // Use authenticated fetch
+      const data = await authenticatedFetch('/api/setup/demo', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
       });
 
-      const data = await response.json();
-      
-      console.log('Demo setup response:', { status: response.status, data });
-      setDebugInfo(`Response: ${response.status} - ${JSON.stringify(data)}`);
-
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP ${response.status}: Failed to join demo household`);
-      }
-
+      console.log('Demo setup response:', data);
+      setDebugInfo(`Response: ${JSON.stringify(data)}`);
       setSuccess('Successfully joined demo household! Redirecting...');
       
       // Wait a moment for user to see success message, then redirect
@@ -80,25 +71,15 @@ export default function SetupPage() {
     try {
       console.log('Creating new household for user:', user.id);
       
-      // First create the household
-      const householdResponse = await fetch('/api/households', {
+      const data = await authenticatedFetch('/api/households', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           name: `${user.email?.split('@')[0]}'s Household`,
           base_currency: 'USD'
         }),
       });
 
-      const householdData = await householdResponse.json();
-      console.log('Household creation response:', { status: householdResponse.status, data: householdData });
-
-      if (!householdResponse.ok) {
-        throw new Error(householdData.error || 'Failed to create household');
-      }
-
+      console.log('Household creation response:', data);
       setSuccess('Household created successfully! Redirecting...');
       
       setTimeout(() => {
@@ -234,4 +215,102 @@ export default function SetupPage() {
       </div>
     </div>
   );
+}
+
+// hooks/useHousehold.ts - Updated with authenticated fetch
+import { useState, useEffect } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { authenticatedFetch } from '../lib/api';
+
+interface Household {
+  id: string;
+  name: string;
+  base_currency: string;
+  created_at: string;
+  settings?: any;
+}
+
+interface HouseholdMember {
+  id: string;
+  household_id: string;
+  user_id: string;
+  role: 'owner' | 'editor' | 'viewer';
+  joined_at: string;
+  invited_by?: string;
+  households?: Household;
+}
+
+export function useHousehold() {
+  const { user } = useAuth();
+  const [households, setHouseholds] = useState<Household[]>([]);
+  const [currentHousehold, setCurrentHousehold] = useState<Household | null>(null);
+  const [userMemberships, setUserMemberships] = useState<HouseholdMember[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchHouseholds = async () => {
+    if (!user) {
+      setHouseholds([]);
+      setCurrentHousehold(null);
+      setUserMemberships([]);
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // Use authenticated fetch for households
+      const data = await authenticatedFetch('/api/households');
+      
+      setHouseholds(data.data || []);
+
+      // Set current household to first one if not already set
+      if (!currentHousehold && data.data?.length > 0) {
+        const savedHouseholdId = localStorage.getItem('currentHouseholdId');
+        const savedHousehold = savedHouseholdId 
+          ? data.data.find(h => h.id === savedHouseholdId) 
+          : null;
+        
+        setCurrentHousehold(savedHousehold || data.data[0]);
+      }
+
+    } catch (err) {
+      console.error('Error fetching households:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch households');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const switchHousehold = (householdId: string) => {
+    const household = households.find(h => h.id === householdId);
+    if (household) {
+      setCurrentHousehold(household);
+      localStorage.setItem('currentHouseholdId', householdId);
+    }
+  };
+
+  useEffect(() => {
+    fetchHouseholds();
+  }, [user]);
+
+  // Save current household to localStorage when it changes
+  useEffect(() => {
+    if (currentHousehold) {
+      localStorage.setItem('currentHouseholdId', currentHousehold.id);
+    }
+  }, [currentHousehold]);
+
+  return {
+    households,
+    currentHousehold,
+    userMemberships,
+    isLoading,
+    error,
+    setCurrentHousehold: switchHousehold,
+    switchHousehold,
+    refetch: fetchHouseholds
+  };
 }

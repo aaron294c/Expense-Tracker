@@ -1,15 +1,9 @@
-// pages/api/households.ts - Create missing household endpoint
-import { NextApiRequest, NextApiResponse } from 'next';
-import { createServerSupabaseClient } from '../../lib/supabaseServer';
+// pages/api/households.ts - Fixed households endpoint
+import { NextApiResponse } from 'next';
+import { withAuth, AuthenticatedRequest } from '../../lib/auth-middleware';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const supabase = createServerSupabaseClient({ req, res });
-
-  // Get the authenticated user
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
+async function householdsHandler(req: AuthenticatedRequest, res: NextApiResponse) {
+  const { user, supabase } = req;
 
   try {
     if (req.method === 'GET') {
@@ -86,3 +80,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
+
+export default withAuth(householdsHandler);
