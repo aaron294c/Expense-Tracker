@@ -1,6 +1,7 @@
 // pages/api/setup/demo.ts - Fixed demo setup endpoint
 import { NextApiResponse } from 'next';
-import { withAuth, AuthenticatedRequest } from '../../lib/auth-middleware';
+import { withAuth, AuthenticatedRequest } from '../../../../lib/auth-middleware';
+
 
 const DEMO_HOUSEHOLD_ID = '550e8400-e29b-41d4-a716-446655440001';
 

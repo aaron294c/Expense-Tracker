@@ -1,7 +1,7 @@
-// hooks/useHousehold.ts - Fixed version
+// hooks/useHousehold.ts - Updated with authenticated fetch
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabaseBrowser';
 import { useAuth } from '../contexts/AuthContext';
+import { authenticatedFetch } from '../lib/api';
 
 interface Household {
   id: string;
@@ -42,37 +42,19 @@ export function useHousehold() {
       setIsLoading(true);
       setError(null);
 
-      // Get user's household memberships with household details
-      const { data: memberships, error: membershipError } = await supabase
-        .from('household_members')
-        .select(`
-          *,
-          households (*)
-        `)
-        .eq('user_id', user.id)
-        .order('joined_at', { ascending: false });
-
-      if (membershipError) {
-        throw membershipError;
-      }
-
-      setUserMemberships(memberships || []);
-
-      // Extract households from memberships
-      const householdList = (memberships || [])
-        .map(m => m.households)
-        .filter(Boolean) as Household[];
-
-      setHouseholds(householdList);
+      // Use authenticated fetch for households
+      const data = await authenticatedFetch('/api/households');
+      
+      setHouseholds(data.data || []);
 
       // Set current household to first one if not already set
-      if (!currentHousehold && householdList.length > 0) {
+      if (!currentHousehold && data.data?.length > 0) {
         const savedHouseholdId = localStorage.getItem('currentHouseholdId');
         const savedHousehold = savedHouseholdId 
-          ? householdList.find(h => h.id === savedHouseholdId) 
+          ? data.data.find(h => h.id === savedHouseholdId) 
           : null;
         
-        setCurrentHousehold(savedHousehold || householdList[0]);
+        setCurrentHousehold(savedHousehold || data.data[0]);
       }
 
     } catch (err) {
