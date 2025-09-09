@@ -20,3 +20,10 @@ node_modules/
 out/
 dist/
 .env*
+node_modules/
+.next/
+.vercel/
+.turbo/
+out/
+dist/
+.env*
