@@ -1,4 +1,4 @@
-/ hooks/useTransactions.ts - Fixed version  
+// hooks/useTransactions.ts - Fixed version  
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseBrowser';
 import { useAuth } from '../contexts/AuthContext';
