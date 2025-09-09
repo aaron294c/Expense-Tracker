@@ -1,6 +1,6 @@
-// pages/api/transactions.ts
+/ pages/api/transactions.ts - Fix the existing transactions endpoint
 import { NextApiRequest, NextApiResponse } from 'next';
-import { createServerSupabaseClient } from '@/lib/supabaseServer';
+import { createServerSupabaseClient } from '../../lib/supabaseServer';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const supabase = createServerSupabaseClient({ req, res });
@@ -64,7 +64,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const { account_id, description, merchant, amount, direction, currency = 'USD', occurred_at, categories } = req.body;
 
       if (!account_id || !description || !amount || !direction) {
-        return res.status(400).json({ error: 'Missing required fields' });
+        return res.status(400).json({ error: 'Missing required fields: account_id, description, amount, direction' });
+      }
+
+      // Verify the account belongs to the household
+      const { data: account, error: accountError } = await supabase
+        .from('accounts')
+        .select('household_id')
+        .eq('id', account_id)
+        .single();
+
+      if (accountError || !account) {
+        return res.status(400).json({ error: 'Invalid account_id' });
+      }
+
+      if (account.household_id !== household_id) {
+        return res.status(403).json({ error: 'Account does not belong to this household' });
       }
 
       // Create the transaction

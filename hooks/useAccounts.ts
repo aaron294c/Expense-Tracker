@@ -1,3 +1,5 @@
+
+// hooks/useAccounts.ts - Fixed version
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseBrowser';
 
@@ -9,6 +11,8 @@ interface AccountWithBalance {
   current_balance: number;
   currency: string;
   is_archived: boolean;
+  transaction_count: number;
+  last_transaction_at?: string;
 }
 
 export function useAccounts(householdId: string | null) {
@@ -27,18 +31,16 @@ export function useAccounts(householdId: string | null) {
       setIsLoading(true);
       setError(null);
 
-      const { data: accountData, error: accountError } = await supabase
-        .from('v_account_balances')
-        .select('*')
-        .eq('household_id', householdId)
-        .eq('is_archived', false)
-        .order('name');
-
-      if (accountError) {
-        throw accountError;
+      const params = new URLSearchParams({ household_id: householdId });
+      const response = await fetch(`/api/accounts?${params}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to fetch accounts');
       }
 
-      setAccounts(accountData || []);
+      const result = await response.json();
+      setAccounts(result.data || []);
 
     } catch (err) {
       console.error('Error fetching accounts:', err);

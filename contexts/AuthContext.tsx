@@ -1,3 +1,4 @@
+// contexts/AuthContext.tsx - Fixed version
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { useRouter } from 'next/router';
@@ -62,10 +63,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         // Handle redirects based on auth state
         if (event === 'SIGNED_IN' && session?.user) {
-          // Redirect to dashboard after successful login
-          router.push('/dashboard');
+          // Check if user has household, if not redirect to setup
+          const { data: memberships } = await supabase
+            .from('household_members')
+            .select('household_id, households(*)')
+            .eq('user_id', session.user.id);
+
+          if (!memberships || memberships.length === 0) {
+            router.push('/setup');
+          } else {
+            router.push('/dashboard');
+          }
         } else if (event === 'SIGNED_OUT') {
-          // Redirect to login after logout
           router.push('/login');
         }
       }
