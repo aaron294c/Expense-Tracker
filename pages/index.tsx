@@ -1,3 +1,4 @@
+// pages/index.tsx
 import React, { useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,11 +10,7 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!isLoading) {
-      if (user) {
-        router.push('/dashboard');
-      } else {
-        router.push('/login');
-      }
+      router.replace(user ? '/dashboard' : '/login');
     }
   }, [user, isLoading, router]);
 

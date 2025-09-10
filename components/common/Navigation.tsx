@@ -1,12 +1,13 @@
+// components/common/Navigation.tsx
 import React from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Home, CreditCard, PieChart, Settings } from 'lucide-react';
 
-const navigationItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home, href: '/dashboard' },
-  { id: 'transactions', label: 'Transactions', icon: CreditCard, href: '/transactions' },
-  { id: 'budgets', label: 'Budgets', icon: PieChart, href: '/budgets' },
-  { id: 'settings', label: 'Settings', icon: Settings, href: '/settings' },
+const items = [
+  { href: '/dashboard',   label: 'Dashboard',   icon: '🏠' },
+  { href: '/transactions',label: 'Transactions',icon: '💳' },
+  { href: '/budgets',     label: 'Budgets',     icon: '📊' },
+  { href: '/settings',    label: 'Settings',    icon: '⚙️' },
 ];
 
 export function Navigation() {
@@ -14,24 +15,20 @@ export function Navigation() {
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-50">
-      <div className="flex justify-around">
-        {navigationItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = router.pathname === item.href;
-          
+      <div className="max-w-md mx-auto flex justify-around">
+        {items.map((item) => {
+          const active = router.pathname === item.href;
           return (
-            <button
-              key={item.id}
-              onClick={() => router.push(item.href)}
-              className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors ${
-                isActive 
-                  ? 'text-blue-600' 
-                  : 'text-gray-500 hover:text-gray-700'
-              }`}
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors
+                ${active ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              aria-current={active ? 'page' : undefined}
             >
-              <Icon size={20} />
+              <span className="text-2xl leading-none">{item.icon}</span>
               <span className="text-xs">{item.label}</span>
-            </button>
+            </Link>
           );
         })}
       </div>

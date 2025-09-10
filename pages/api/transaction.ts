@@ -1,140 +1,107 @@
-/ pages/api/transactions.ts - Fix the existing transactions endpoint
-import { NextApiRequest, NextApiResponse } from 'next';
-import { createServerSupabaseClient } from '../../lib/supabaseServer';
+// pages/transactions.tsx
+import React, { useState } from 'react';
+import Link from 'next/link';
+import { AuthWrapper } from '../components/auth/AuthWrapper';
+import { AppLayout } from '../components/layout/AppLayout';
+import { Card } from '../components/ui/Card';
+import { Button } from '../components/ui/Button';
+import { useTransactions } from '../hooks/useTransactions';
+import { useHousehold } from '../hooks/useHousehold';
+import { formatCurrency, formatDate, getCurrencyFromHousehold } from '../lib/utils';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const supabase = createServerSupabaseClient({ req, res });
+function TransactionsContent() {
+  const { currentHousehold } = useHousehold();
+  const currency = getCurrencyFromHousehold(currentHousehold, 'USD');
 
-  // Get the authenticated user
-  const { data: { user }, error: authError } = await supabase.auth.getUser();
-  if (authError || !user) {
-    return res.status(401).json({ error: 'Unauthorized' });
+  const { transactions, isLoading, hasMore, loadMore } = useTransactions(currentHousehold?.id || null);
+  const [showFilters, setShowFilters] = useState(false);
+
+  if (isLoading && transactions.length === 0) {
+    return (
+      <div className="p-4 space-y-3">
+        {[...Array(5)].map((_, i) => (
+          <Card key={i} className="animate-pulse">
+            <div className="flex items-center gap-4 p-4">
+              <div className="h-12 w-12 bg-gray-200 rounded-full" />
+              <div className="flex-1">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+                <div className="h-3 bg-gray-200 rounded w-1/2" />
+              </div>
+              <div className="h-4 bg-gray-200 rounded w-16" />
+            </div>
+          </Card>
+        ))}
+      </div>
+    );
   }
 
-  const { household_id, limit = '20', offset = '0', account_id, category_id, date_from, date_to, search } = req.query;
+  return (
+    <div className="p-4 space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
+        <Button variant="ghost" size="sm" onClick={() => setShowFilters(!showFilters)} aria-label="Toggle filters">
+          🔍
+        </Button>
+      </div>
 
-  if (!household_id) {
-    return res.status(400).json({ error: 'household_id is required' });
-  }
+      {/* Transactions */}
+      <div className="space-y-3">
+        {transactions.map((t) => (
+          <Card key={t.id}>
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+                <span className="text-2xl">{t.primary_category_icon || '💳'}</span>
+              </div>
 
-  try {
-    if (req.method === 'GET') {
-      let query = supabase
-        .from('v_recent_transactions')
-        .select('*')
-        .eq('household_id', household_id)
-        .order('occurred_at', { ascending: false })
-        .range(parseInt(offset as string), parseInt(offset as string) + parseInt(limit as string) - 1);
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-gray-900 truncate">{t.merchant || t.description}</p>
+                <p className="text-sm text-gray-500">
+                  {t.primary_category_name} • {formatDate(t.occurred_at, 'short')}
+                </p>
+                <p className="text-xs text-gray-400 truncate">{t.account_name}</p>
+              </div>
 
-      // Apply filters
-      if (account_id) {
-        query = query.eq('account_id', account_id);
-      }
-      if (search) {
-        query = query.or(`description.ilike.%${search}%,merchant.ilike.%${search}%`);
-      }
-      if (date_from) {
-        query = query.gte('occurred_at', date_from);
-      }
-      if (date_to) {
-        query = query.lte('occurred_at', date_to);
-      }
+              <div className="text-right">
+                <p className={`font-bold ${t.direction === 'outflow' ? 'text-red-600' : 'text-green-600'}`}>
+                  {t.direction === 'outflow' ? '-' : '+'}
+                  {formatCurrency(t.amount, currency)}
+                </p>
+                <p className="text-xs text-gray-400">{formatDate(t.occurred_at, 'short')}</p>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
 
-      const { data: transactions, error } = await query;
+      {/* Load More */}
+      {hasMore && (
+        <div className="text-center pt-4">
+          <Button variant="secondary" onClick={loadMore} disabled={isLoading} loading={isLoading}>
+            Load More
+          </Button>
+        </div>
+      )}
 
-      if (error) {
-        console.error('Error fetching transactions:', error);
-        return res.status(500).json({ error: 'Failed to fetch transactions' });
-      }
+      {transactions.length === 0 && !isLoading && (
+        <Card className="text-center py-12">
+          <div className="text-4xl mb-4">📝</div>
+          <p className="text-gray-500 mb-4">No transactions found</p>
+          <Link href="/transactions/add" className="inline-block">
+            <Button>Add Transaction</Button>
+          </Link>
+        </Card>
+      )}
+    </div>
+  );
+}
 
-      // Check if there are more transactions
-      const hasMore = transactions?.length === parseInt(limit as string);
-
-      return res.status(200).json({ 
-        data: transactions || [],
-        pagination: {
-          hasMore,
-          offset: parseInt(offset as string),
-          limit: parseInt(limit as string)
-        }
-      });
-    }
-
-    if (req.method === 'POST') {
-      const { account_id, description, merchant, amount, direction, currency = 'USD', occurred_at, categories } = req.body;
-
-      if (!account_id || !description || !amount || !direction) {
-        return res.status(400).json({ error: 'Missing required fields: account_id, description, amount, direction' });
-      }
-
-      // Verify the account belongs to the household
-      const { data: account, error: accountError } = await supabase
-        .from('accounts')
-        .select('household_id')
-        .eq('id', account_id)
-        .single();
-
-      if (accountError || !account) {
-        return res.status(400).json({ error: 'Invalid account_id' });
-      }
-
-      if (account.household_id !== household_id) {
-        return res.status(403).json({ error: 'Account does not belong to this household' });
-      }
-
-      // Create the transaction
-      const { data: transaction, error: transactionError } = await supabase
-        .from('transactions')
-        .insert({
-          household_id: household_id as string,
-          account_id,
-          user_id: user.id,
-          description,
-          merchant,
-          amount: parseFloat(amount),
-          direction,
-          currency,
-          occurred_at: occurred_at || new Date().toISOString()
-        })
-        .select()
-        .single();
-
-      if (transactionError) {
-        console.error('Error creating transaction:', transactionError);
-        return res.status(500).json({ error: 'Failed to create transaction' });
-      }
-
-      // Add categories if provided
-      if (categories && categories.length > 0) {
-        const categoryInserts = categories.map((cat: any) => ({
-          transaction_id: transaction.id,
-          category_id: cat.category_id,
-          weight: cat.weight || 1.0
-        }));
-
-        const { error: categoryError } = await supabase
-          .from('transaction_categories')
-          .insert(categoryInserts);
-
-        if (categoryError) {
-          console.error('Error adding categories:', categoryError);
-          // Don't fail the transaction creation for category errors
-        }
-      }
-
-      // Fetch the complete transaction with categories
-      const { data: completeTransaction } = await supabase
-        .from('v_recent_transactions')
-        .select('*')
-        .eq('id', transaction.id)
-        .single();
-
-      return res.status(201).json({ data: completeTransaction || transaction });
-    }
-
-    return res.status(405).json({ error: 'Method not allowed' });
-  } catch (error) {
-    console.error('API error:', error);
-    return res.status(500).json({ error: 'Internal server error' });
-  }
+export default function TransactionsPage() {
+  return (
+    <AuthWrapper>
+      <AppLayout title="Transactions">
+        <TransactionsContent />
+      </AppLayout>
+    </AuthWrapper>
+  );
 }
