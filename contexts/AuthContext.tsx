@@ -1,6 +1,6 @@
-// contexts/AuthContext.tsx - Unified auth provider
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+// contexts/AuthContext.tsx
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import type { User, Session } from '@supabase/supabase-js';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseBrowser';
 
@@ -15,169 +15,87 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
 export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  return ctx;
 };
 
-interface AuthProviderProps {
-  children: React.ReactNode;
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+export const AuthProvider: React.FC<React.PropsWithChildren> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
+  const redirectedRef = useRef(false);
 
   useEffect(() => {
-    // Get initial session
-    const getInitialSession = async () => {
-      try {
-        console.log('Getting initial session...');
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Error getting session:', error);
-        } else {
-          console.log('Initial session loaded:', { 
-            hasSession: !!session, 
-            userId: session?.user?.id,
-            email: session?.user?.email 
-          });
-        }
-        
-        setSession(session);
-        setUser(session?.user ?? null);
-      } catch (error) {
-        console.error('Error in getInitialSession:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    let unsub: { unsubscribe: () => void } | null = null;
 
-    getInitialSession();
+    (async () => {
+      console.log('[Auth] getSession...');
+      const { data, error } = await supabase.auth.getSession();
+      if (error) console.error('[Auth] getSession error:', error);
+      setSession(data?.session ?? null);
+      setUser(data?.session?.user ?? null);
+      setIsLoading(false);
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', { 
-          event, 
-          hasSession: !!session, 
-          userId: session?.user?.id,
-          email: session?.user?.email 
-        });
-        
-        setSession(session);
-        setUser(session?.user ?? null);
+      const sub = supabase.auth.onAuthStateChange((_event, s) => {
+        setSession(s ?? null);
+        setUser(s?.user ?? null);
         setIsLoading(false);
 
-        // Handle redirects based on auth state
-        if (event === 'SIGNED_IN' && session?.user) {
-          // Don't redirect if we're already on an auth page
-          if (router.pathname === '/login' || router.pathname === '/') {
-            router.push('/dashboard');
-          }
-        } else if (event === 'SIGNED_OUT') {
-          // Only redirect to login if we're on a protected page
-          if (router.pathname !== '/login' && router.pathname !== '/') {
-            router.push('/login');
+        // Single-redirect guard to avoid double navigations in dev
+        if (!redirectedRef.current) {
+          if (s?.user && (router.pathname === '/' || router.pathname === '/login')) {
+            redirectedRef.current = true;
+            router.replace('/dashboard');
+          } else if (!s?.user && !['/login', '/'].includes(router.pathname)) {
+            redirectedRef.current = true;
+            router.replace('/login');
           }
         }
-      }
-    );
+      });
+      unsub = sub.data.subscription;
+    })();
 
     return () => {
-      console.log('Cleaning up auth subscription');
-      subscription.unsubscribe();
+      console.log('[Auth] cleanup subscription');
+      unsub?.unsubscribe();
     };
   }, [router]);
 
   const signIn = async (email: string, password: string) => {
-    try {
-      console.log('Attempting sign in for:', email);
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      
-      if (error) {
-        console.error('Sign in error:', error);
-      } else {
-        console.log('Sign in successful:', { userId: data.user?.id });
-      }
-      
-      return { error };
-    } catch (error) {
-      console.error('Sign in exception:', error);
-      return { error };
-    }
+    console.log('[Auth] signIn', email);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) console.error('[Auth] signIn error:', error);
+    else console.log('[Auth] signIn ok:', data.user?.id);
+    return { error };
   };
 
   const signUp = async (email: string, password: string) => {
-    try {
-      console.log('Attempting sign up for:', email);
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      
-      if (error) {
-        console.error('Sign up error:', error);
-      } else {
-        console.log('Sign up successful:', { userId: data.user?.id });
-      }
-      
-      return { error };
-    } catch (error) {
-      console.error('Sign up exception:', error);
-      return { error };
-    }
+    console.log('[Auth] signUp', email);
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error) console.error('[Auth] signUp error:', error);
+    else console.log('[Auth] signUp ok:', data.user?.id);
+    return { error };
   };
 
   const signOut = async () => {
-    try {
-      console.log('Signing out user:', user?.id);
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error('Sign out error:', error);
-    }
+    console.log('[Auth] signOut', user?.id);
+    await supabase.auth.signOut();
   };
 
   const resetPassword = async (email: string) => {
-    try {
-      console.log('Resetting password for:', email);
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      
-      if (error) {
-        console.error('Reset password error:', error);
-      }
-      
-      return { error };
-    } catch (error) {
-      console.error('Reset password exception:', error);
-      return { error };
-    }
-  };
-
-  const value: AuthContextType = {
-    user,
-    session,
-    isLoading,
-    signIn,
-    signUp,
-    signOut,
-    resetPassword,
+    console.log('[Auth] resetPassword', email);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    if (error) console.error('[Auth] reset error:', error);
+    return { error };
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, session, isLoading, signIn, signUp, signOut, resetPassword }}>
       {children}
     </AuthContext.Provider>
   );
