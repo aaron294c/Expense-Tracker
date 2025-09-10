@@ -1,122 +1,121 @@
-// pages/api/households.ts - Fixed households endpoint
-import { NextApiResponse } from 'next';
-import { withAuth, AuthenticatedRequest } from '../../lib/auth-middleware';
+// pages/api/households.ts
+import type { NextApiResponse } from 'next';
+import type { PostgrestError } from '@supabase/supabase-js';
+import { withAuth, type AuthenticatedRequest } from '../../lib/auth-middleware';
+
+function sendPgError(res: NextApiResponse, http: number, label: string, err?: PostgrestError | null) {
+  if (err) {
+    console.error(`${label}:`, err);
+    return res.status(http).json({
+      error: label,
+      code: err.code ?? null,
+      details: err.details ?? null,
+      message: err.message ?? null,
+      hint: err.hint ?? null,
+    });
+  }
+  return res.status(http).json({ error: label });
+}
+
+const ALLOWED_CURRENCIES = new Set(['USD', 'GBP', 'EUR']);
 
 async function householdsHandler(req: AuthenticatedRequest, res: NextApiResponse) {
   const { user, supabase } = req;
+  const method = req.method ?? 'GET';
 
   try {
-    console.log(`[${req.method}] /api/households - User: ${user.id} (${user.email})`);
+    console.log(`[${method}] /api/households – user=${user.id} (${user.email ?? 'no-email'})`);
 
-    if (req.method === 'GET') {
-      // Get user's households
-      const { data: memberships, error } = await supabase
+    // GET: list households visible to this user (owner or member via RLS)
+    if (method === 'GET') {
+      const { data, error } = await supabase
+        .from('households')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) return sendPgError(res, 403, 'Failed to fetch households', error);
+
+      // Enrich with membership role/joined_at for this user
+      const { data: memberships, error: memErr } = await supabase
         .from('household_members')
-        .select(`
-          *,
-          households (*)
-        `)
-        .eq('user_id', user.id)
-        .order('joined_at', { ascending: false });
+        .select('household_id, role, joined_at')
+        .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Error fetching households:', error);
-        return res.status(500).json({ error: 'Failed to fetch households', details: error.message });
-      }
+      if (memErr) return sendPgError(res, 403, 'Failed to fetch memberships', memErr);
 
-      const households = (memberships || [])
-        .map(m => ({
-          ...m.households,
-          role: m.role,
-          joined_at: m.joined_at
-        }))
-        .filter(Boolean);
+      const roleMap = new Map<string, { role: string; joined_at: string }>();
+      (memberships ?? []).forEach(m => {
+        roleMap.set(m.household_id, { role: m.role as string, joined_at: m.joined_at as string });
+      });
 
-      console.log(`Found ${households.length} households for user ${user.id}`);
-      return res.status(200).json({ data: households });
+      const shaped = (data ?? []).map(h => ({
+        ...h,
+        ...(roleMap.get(h.id) ??
+          (h.owner_id === user.id ? { role: 'owner', joined_at: h.created_at } : {})),
+      }));
+
+      return res.status(200).json({ data: shaped });
     }
 
-    if (req.method === 'POST') {
-      const { name, base_currency = 'USD' } = req.body;
+    // POST: create a household (owner_id must equal auth.uid() for INSERT policy),
+    // then create an owner membership row.
+    if (method === 'POST') {
+      const rawName = (req.body?.name ?? '') as string;
+      const rawCurrency = (req.body?.base_currency ?? 'USD') as string;
 
-      if (!name || name.trim() === '') {
-        return res.status(400).json({ error: 'Household name is required' });
-      }
+      const name = rawName.trim();
+      if (!name) return res.status(400).json({ error: 'Household name is required' });
+
+      const base_currency = ALLOWED_CURRENCIES.has(rawCurrency?.toUpperCase?.() ?? '')
+        ? rawCurrency.toUpperCase()
+        : 'USD';
 
       console.log(`Creating new household for user: ${user.id}`);
 
-      // Start a transaction-like operation
-      try {
-        // Create the household
-        const { data: household, error: householdError } = await supabase
-          .from('households')
-          .insert({
-            name: name.trim(),
-            base_currency
-          })
-          .select()
-          .single();
+      // 1) Create household as owner (required by RLS: owner_id = auth.uid())
+      const { data: household, error: householdError } = await supabase
+        .from('households')
+        .insert({
+          name,
+          base_currency,
+          owner_id: user.id, // <-- REQUIRED for the INSERT policy
+        })
+        .select()
+        .single();
 
-        if (householdError) {
-          console.error('Error creating household:', householdError);
-          return res.status(500).json({ 
-            error: 'Failed to create household', 
-            details: householdError.message 
-          });
-        }
+      if (householdError) return sendPgError(res, 403, 'Failed to create household', householdError);
 
-        console.log(`Household created with ID: ${household.id}`);
+      console.log(`Household created with ID: ${household.id}`);
 
-        // Add the user as the owner
-        const { data: membership, error: memberError } = await supabase
-          .from('household_members')
-          .insert({
-            household_id: household.id,
-            user_id: user.id,
-            role: 'owner'
-          })
-          .select()
-          .single();
+      // 2) Create owner membership (role must be allowed by your enum/check)
+      const { data: membership, error: memberError } = await supabase
+        .from('household_members')
+        .insert({
+          household_id: household.id,
+          user_id: user.id,
+          role: 'owner', // ensure enum household_role includes 'owner' (or use text+CHECK)
+        })
+        .select()
+        .single();
 
-        if (memberError) {
-          console.error('Error adding user to household:', memberError);
-          
-          // Try to clean up the household if adding member fails
-          await supabase.from('households').delete().eq('id', household.id);
-          
-          return res.status(500).json({ 
-            error: 'Failed to create household membership', 
-            details: memberError.message 
-          });
-        }
-
-        console.log(`User ${user.id} added as owner to household ${household.id}`);
-
-        // Return the household with membership info
-        const householdWithMembership = {
-          ...household,
-          role: membership.role,
-          joined_at: membership.joined_at
-        };
-
-        return res.status(201).json({ data: householdWithMembership });
-
-      } catch (error) {
-        console.error('Transaction error in household creation:', error);
-        return res.status(500).json({ 
-          error: 'Failed to create household', 
-          details: error instanceof Error ? error.message : 'Unknown error' 
-        });
+      if (memberError) {
+        console.error('Error adding user to household:', memberError);
+        // best-effort cleanup (owner can delete via RLS)
+        await supabase.from('households').delete().eq('id', household.id);
+        return sendPgError(res, 403, 'Failed to create household membership', memberError);
       }
+
+      console.log(`User ${user.id} added as owner to household ${household.id}`);
+
+      return res.status(201).json({
+        data: { ...household, role: membership.role, joined_at: membership.joined_at },
+      });
     }
 
     return res.status(405).json({ error: 'Method not allowed' });
-  } catch (error) {
-    console.error('API error in households handler:', error);
-    return res.status(500).json({ 
-      error: 'Internal server error',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    });
+  } catch (err: any) {
+    console.error('Unhandled /api/households error:', err);
+    return res.status(500).json({ error: 'Internal server error', details: err?.message ?? String(err) });
   }
 }
 

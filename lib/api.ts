@@ -1,30 +1,33 @@
-// lib/api.ts - Create authenticated API utility
+// lib/api.ts
 import { supabase } from './supabaseBrowser';
 
 export async function authenticatedFetch(url: string, options: RequestInit = {}) {
-  // Get current session
   const { data: { session }, error } = await supabase.auth.getSession();
-  
   if (error || !session?.access_token) {
     throw new Error('No valid session found');
   }
 
-  // Add auth header to all requests
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${session.access_token}`,
-    ...options.headers,
-  };
-
   const response = await fetch(url, {
     ...options,
-    headers,
+    credentials: 'include', // future-proof if you later use cookies
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+      ...(options.headers || {}),
+    },
   });
 
+  const text = await response.text();
+  let body: any = null;
+  try { body = text ? JSON.parse(text) : null; } catch { /* non-JSON */ }
+
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: 'Network error' }));
-    throw new Error(errorData.error || `HTTP ${response.status}`);
+    const msg =
+      body?.details || body?.message || body?.error || `HTTP ${response.status}`;
+    const err = new Error(msg);
+    (err as any).response = { status: response.status, body };
+    throw err;
   }
 
-  return response.json();
+  return body;
 }
