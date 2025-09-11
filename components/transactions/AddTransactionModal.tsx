@@ -1,6 +1,6 @@
-// components/transactions/AddTransactionModal.tsx - Fully functional version
+// components/transactions/AddTransactionModal.tsx - Enhanced with full database integration
 import React, { useState, useEffect } from 'react';
-import { X, Calendar, DollarSign, Tag, Plus, Minus } from 'lucide-react';
+import { X, Calendar, DollarSign, Tag, Plus, Minus, CreditCard, Building2, PiggyBank, Wallet } from 'lucide-react';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 
 interface Account {
@@ -8,6 +8,7 @@ interface Account {
   name: string;
   type: string;
   current_balance: number;
+  currency: string;
 }
 
 interface Category {
@@ -22,10 +23,26 @@ interface AddTransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
   householdId: string;
+  defaultDirection?: 'inflow' | 'outflow';
   onSuccess?: () => void;
 }
 
-export function AddTransactionModal({ isOpen, onClose, householdId, onSuccess }: AddTransactionModalProps) {
+const QUICK_AMOUNTS = [5, 10, 25, 50, 100];
+
+const ACCOUNT_ICONS = {
+  current: Building2,
+  savings: PiggyBank,
+  credit: CreditCard,
+  cash: Wallet
+};
+
+export function AddTransactionModal({ 
+  isOpen, 
+  onClose, 
+  householdId, 
+  defaultDirection = 'outflow',
+  onSuccess 
+}: AddTransactionModalProps) {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -37,14 +54,12 @@ export function AddTransactionModal({ isOpen, onClose, householdId, onSuccess }:
     amount: '',
     description: '',
     merchant: '',
-    direction: 'outflow' as 'inflow' | 'outflow',
+    direction: defaultDirection,
     category_id: '',
     occurred_at: new Date().toISOString().split('T')[0],
   });
 
-  // Quick amount buttons
-  const quickAmounts = [5, 10, 25, 50, 100];
-
+  // Fetch accounts and categories when modal opens
   useEffect(() => {
     if (isOpen) {
       fetchData();
@@ -54,13 +69,13 @@ export function AddTransactionModal({ isOpen, onClose, householdId, onSuccess }:
         amount: '',
         description: '',
         merchant: '',
-        direction: 'outflow',
+        direction: defaultDirection,
         category_id: '',
         occurred_at: new Date().toISOString().split('T')[0],
       });
       setError(null);
     }
-  }, [isOpen, householdId]);
+  }, [isOpen, householdId, defaultDirection]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -165,9 +180,8 @@ export function AddTransactionModal({ isOpen, onClose, householdId, onSuccess }:
 
   if (!isOpen) return null;
 
-  const expenseCategories = categories.filter(c => c.kind === 'expense');
-  const incomeCategories = categories.filter(c => c.kind === 'income');
-  const currentCategories = formData.direction === 'outflow' ? expenseCategories : incomeCategories;
+  const currentCategories = categories.filter(c => c.kind === formData.direction);
+  const selectedAccount = accounts.find(a => a.id === formData.account_id);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
@@ -279,7 +293,7 @@ export function AddTransactionModal({ isOpen, onClose, householdId, onSuccess }:
               
               {/* Quick Amount Buttons */}
               <div className="flex gap-2 mt-2">
-                {quickAmounts.map((amount) => (
+                {QUICK_AMOUNTS.map((amount) => (
                   <button
                     key={amount}
                     type="button"
@@ -305,12 +319,20 @@ export function AddTransactionModal({ isOpen, onClose, householdId, onSuccess }:
                 required
               >
                 <option value="">Select account</option>
-                {accounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name} ({account.type}) - ${account.current_balance?.toFixed(2) || '0.00'}
-                  </option>
-                ))}
+                {accounts.map((account) => {
+                  const IconComponent = ACCOUNT_ICONS[account.type as keyof typeof ACCOUNT_ICONS] || Building2;
+                  return (
+                    <option key={account.id} value={account.id}>
+                      {account.name} ({account.type}) - ${account.current_balance?.toFixed(2) || '0.00'}
+                    </option>
+                  );
+                })}
               </select>
+              {selectedAccount && (
+                <p className="mt-1 text-sm text-gray-500">
+                  Current balance: ${selectedAccount.current_balance?.toFixed(2) || '0.00'}
+                </p>
+              )}
             </div>
 
             {/* Description */}
@@ -374,6 +396,7 @@ export function AddTransactionModal({ isOpen, onClose, householdId, onSuccess }:
                 <div className="text-center py-4 text-gray-500">
                   <Tag size={24} className="mx-auto mb-2" />
                   <p className="text-sm">No {formData.direction === 'outflow' ? 'expense' : 'income'} categories available</p>
+                  <p className="text-xs mt-1">You can add categories in Settings</p>
                 </div>
               )}
             </div>
