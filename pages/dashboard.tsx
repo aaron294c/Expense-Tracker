@@ -1,4 +1,4 @@
-// pages/dashboard.tsx - Updated with functional buttons
+// pages/dashboard.tsx - Updated with functional buttons and enhanced filtering
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useHousehold } from '../hooks/useHousehold';
@@ -34,6 +34,9 @@ function DashboardPage() {
   const [showAddTransaction, setShowAddTransaction] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [transactionType, setTransactionType] = useState<'expense' | 'income'>('expense');
+  const [showFilters, setShowFilters] = useState(false);
+  const [quickFilter, setQuickFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
 
   if (authLoading || householdLoading) {
     return (
@@ -100,6 +103,61 @@ function DashboardPage() {
     refetchAccounts();
     setShowAddAccount(false);
   };
+
+  // Filter transactions based on quick filter
+  const getFilteredTransactions = () => {
+    let filtered = transactions;
+    
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+    switch (quickFilter) {
+      case 'today':
+        filtered = transactions.filter(t => t.occurred_at.startsWith(today));
+        break;
+      case 'week':
+        filtered = transactions.filter(t => t.occurred_at >= weekAgo);
+        break;
+      case 'month':
+        filtered = transactions.filter(t => t.occurred_at >= monthAgo);
+        break;
+      default:
+        filtered = transactions;
+    }
+
+    if (selectedCategory) {
+      filtered = filtered.filter(t => 
+        t.categories?.some((cat: any) => cat.category_id === selectedCategory)
+      );
+    }
+
+    return filtered;
+  };
+
+  const filteredTransactions = getFilteredTransactions();
+
+  // Get unique categories for filter dropdown
+  const getAvailableCategories = () => {
+    const categorySet = new Set();
+    transactions.forEach(t => {
+      if (t.categories) {
+        t.categories.forEach((cat: any) => {
+          if (cat.category_id && cat.category_name) {
+            categorySet.add(JSON.stringify({
+              id: cat.category_id,
+              name: cat.category_name,
+              icon: cat.icon || '📝'
+            }));
+          }
+        });
+      }
+    });
+    return Array.from(categorySet).map(str => JSON.parse(str as string));
+  };
+
+  const availableCategories = getAvailableCategories();
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
@@ -180,9 +238,19 @@ function DashboardPage() {
           </div>
         </div>
 
-        {/* Quick Actions - FUNCTIONAL */}
+        {/* Quick Actions */}
         <div className="card p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
+            <button 
+              onClick={() => refetchTransactions()}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              title="Refresh data"
+            >
+              <Settings className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
+
           <div className="grid grid-cols-2 gap-4">
             <button 
               onClick={handleAddExpense}
@@ -224,25 +292,77 @@ function DashboardPage() {
               <span className="font-medium text-orange-700">View Insights</span>
             </a>
           </div>
-          
-          {/* Secondary Actions */}
-          <div className="mt-4 grid grid-cols-2 gap-4">
-            <button 
-              className="flex items-center justify-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-gray-600"
-              title="Scan Receipt (Coming Soon)"
+        </div>
+
+        {/* Transaction Filters */}
+        <div className="card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h4 className="font-medium text-gray-900">Filter Transactions</h4>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="text-blue-600 text-sm"
             >
-              <Camera className="w-5 h-5 mr-2" />
-              <span className="text-sm">Scan Receipt</span>
-            </button>
-            
-            <button 
-              className="flex items-center justify-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors text-gray-600"
-              title="Import Data (Coming Soon)"
-            >
-              <Upload className="w-5 h-5 mr-2" />
-              <span className="text-sm">Import</span>
+              {showFilters ? 'Hide' : 'Show'} Filters
             </button>
           </div>
+
+          {/* Quick Filter Pills */}
+          <div className="flex gap-2 mb-3">
+            {[
+              { key: 'all', label: 'All' },
+              { key: 'today', label: 'Today' },
+              { key: 'week', label: '7 Days' },
+              { key: 'month', label: '30 Days' }
+            ].map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setQuickFilter(key as any)}
+                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                  quickFilter === key
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {showFilters && (
+            <div className="space-y-3">
+              {/* Category Filter */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                >
+                  <option value="">All Categories</option>
+                  {availableCategories.map((category: any) => (
+                    <option key={category.id} value={category.id}>
+                      {category.icon} {category.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Reset Filters */}
+              <button
+                onClick={() => {
+                  setQuickFilter('all');
+                  setSelectedCategory('');
+                }}
+                className="text-sm text-gray-600 hover:text-gray-800"
+              >
+                Reset Filters
+              </button>
+            </div>
+          )}
+
+          <p className="text-xs text-gray-500 mt-2">
+            Showing {filteredTransactions.length} of {transactions.length} transactions
+          </p>
         </div>
 
         {/* Recent Transactions */}
@@ -267,9 +387,9 @@ function DashboardPage() {
                 </div>
               ))}
             </div>
-          ) : transactions.length > 0 ? (
+          ) : filteredTransactions.length > 0 ? (
             <div className="space-y-3">
-              {transactions.slice(0, 5).map(t => (
+              {filteredTransactions.slice(0, 5).map(t => (
                 <div key={t.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
                   <div className="flex items-center gap-3">
                     <div className="text-2xl">{t.primary_category_icon || (t.direction === 'outflow' ? '💸' : '💰')}</div>
@@ -328,16 +448,16 @@ function DashboardPage() {
             <div className="text-2xl">🏠</div>
             <span className="text-xs">Home</span>
           </a>
-          <a href="/insights" className="nav-item">
-            <div className="text-2xl">📊</div>
-            <span className="text-xs">Insights</span>
+          <a href="/transactions" className="nav-item">
+            <div className="text-2xl">💳</div>
+            <span className="text-xs">Transactions</span>
           </a>
           <button onClick={handleAddExpense} className="flex flex-col items-center p-2 bg-blue-600 text-white rounded-full -mt-4 shadow-lg">
             <div className="text-2xl">+</div>
           </button>
-          <a href="/accounts" className="nav-item">
-            <div className="text-2xl">💳</div>
-            <span className="text-xs">Accounts</span>
+          <a href="/insights" className="nav-item">
+            <div className="text-2xl">📊</div>
+            <span className="text-xs">Insights</span>
           </a>
           <a href="/settings" className="nav-item">
             <div className="text-2xl">⚙️</div>

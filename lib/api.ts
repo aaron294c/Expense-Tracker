@@ -2,9 +2,17 @@
 import { supabase } from './supabaseBrowser';
 
 export async function authenticatedFetch(url: string, options: RequestInit = {}) {
+  // Try to get the current session
   const { data: { session }, error } = await supabase.auth.getSession();
-  if (error || !session?.access_token) {
-    throw new Error('No valid session found');
+  
+  if (error) {
+    console.error('[API] Session error:', error);
+    throw new Error('Authentication error');
+  }
+  
+  if (!session?.access_token) {
+    console.error('[API] No session or access token found');
+    throw new Error('Missing bearer token');
   }
 
   const response = await fetch(url, {

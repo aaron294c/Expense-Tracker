@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseBrowser';
 import { useAuth } from '../contexts/AuthContext';
+import { authenticatedFetch } from '../lib/api';
 
 interface TransactionCategory {
   category_id: string;
@@ -49,7 +50,7 @@ export function useTransactions(
   householdId: string | null,
   initialFilters: any = {}
 ) {
-  const { user } = useAuth();
+  const { user, session } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -57,7 +58,7 @@ export function useTransactions(
   const [filters, setFilters] = useState(initialFilters);
 
   const fetchTransactions = useCallback(async (reset = false) => {
-    if (!householdId || !user) {
+    if (!householdId || !user || !session) {
       setTransactions([]);
       setIsLoading(false);
       return;
@@ -78,14 +79,7 @@ export function useTransactions(
         ...(filters.date_to && { date_to: filters.date_to }),
       });
 
-      const response = await fetch(`/api/transactions?${params}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch transactions');
-      }
-
-      const result = await response.json();
+      const result = await authenticatedFetch(`/api/transactions?${params}`);
       
       if (reset) {
         setTransactions(result.data || []);
@@ -101,30 +95,20 @@ export function useTransactions(
     } finally {
       setIsLoading(false);
     }
-  }, [householdId, user, filters, transactions.length]);
+  }, [householdId, user, session, filters, transactions.length]);
 
   const createTransaction = useCallback(async (
     data: CreateTransactionData
   ): Promise<Transaction | null> => {
-    if (!user || !householdId) throw new Error('User not authenticated or no household');
+    if (!user || !householdId || !session) throw new Error('User not authenticated or no household');
 
     try {
       setError(null);
 
-      const response = await fetch(`/api/transactions?household_id=${householdId}`, {
+      const result = await authenticatedFetch(`/api/transactions?household_id=${householdId}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(data),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create transaction');
-      }
-
-      const result = await response.json();
       const newTransaction = result.data;
 
       // Add to the beginning of the list
@@ -137,7 +121,7 @@ export function useTransactions(
       setError(err instanceof Error ? err.message : 'Failed to create transaction');
       return null;
     }
-  }, [user, householdId]);
+  }, [user, householdId, session]);
 
   const loadMore = useCallback(() => {
     if (!isLoading && hasMore) {
@@ -151,7 +135,7 @@ export function useTransactions(
 
   useEffect(() => {
     fetchTransactions(true);
-  }, [householdId, user, filters]);
+  }, [householdId, user, session, filters]);
 
   return {
     transactions,

@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, DollarSign, Tag, Plus, Minus, CreditCard, Building2, PiggyBank, Wallet } from 'lucide-react';
 import { LoadingSpinner } from '../common/LoadingSpinner';
+import { authenticatedFetch } from '../../lib/api';
 
 interface Account {
   id: string;
@@ -77,29 +78,56 @@ export function AddTransactionModal({
     }
   }, [isOpen, householdId, defaultDirection]);
 
+  const createDefaultCategories = async () => {
+    const defaultCategories = [
+      // Expense categories
+      { name: 'Food & Dining', kind: 'expense', icon: '🍽️', color: '#F59E0B' },
+      { name: 'Transportation', kind: 'expense', icon: '🚗', color: '#3B82F6' },
+      { name: 'Shopping', kind: 'expense', icon: '🛍️', color: '#EC4899' },
+      { name: 'Entertainment', kind: 'expense', icon: '🎬', color: '#8B5CF6' },
+      { name: 'Bills & Utilities', kind: 'expense', icon: '⚡', color: '#EF4444' },
+      { name: 'Healthcare', kind: 'expense', icon: '🏥', color: '#10B981' },
+      // Income categories
+      { name: 'Salary', kind: 'income', icon: '💼', color: '#059669' },
+      { name: 'Freelance', kind: 'income', icon: '💻', color: '#0EA5E9' },
+      { name: 'Investment', kind: 'income', icon: '📈', color: '#7C3AED' },
+      { name: 'Other Income', kind: 'income', icon: '💰', color: '#059669' }
+    ];
+
+    try {
+      const promises = defaultCategories.map((category, index) => 
+        authenticatedFetch(`/api/categories?household_id=${householdId}`, {
+          method: 'POST',
+          body: JSON.stringify({ ...category, position: index }),
+        })
+      );
+      
+      const results = await Promise.all(promises);
+      const createdCategories = results.map(result => result.data);
+      setCategories(createdCategories);
+    } catch (err) {
+      console.error('Error creating default categories:', err);
+    }
+  };
+
   const fetchData = async () => {
     setIsLoading(true);
     setError(null);
     
     try {
       // Fetch accounts and categories in parallel
-      const [accountsResponse, categoriesResponse] = await Promise.all([
-        fetch(`/api/accounts?household_id=${householdId}`),
-        fetch(`/api/categories?household_id=${householdId}`)
+      const [accountsData, categoriesData] = await Promise.all([
+        authenticatedFetch(`/api/accounts?household_id=${householdId}`),
+        authenticatedFetch(`/api/categories?household_id=${householdId}`)
       ]);
-
-      if (!accountsResponse.ok) {
-        throw new Error('Failed to fetch accounts');
-      }
-      if (!categoriesResponse.ok) {
-        throw new Error('Failed to fetch categories');
-      }
-
-      const accountsData = await accountsResponse.json();
-      const categoriesData = await categoriesResponse.json();
 
       setAccounts(accountsData.data || []);
       setCategories(categoriesData.data || []);
+
+      // Create default categories if none exist
+      if (!categoriesData.data || categoriesData.data.length === 0) {
+        await createDefaultCategories();
+      }
 
       // Auto-select first account if available
       if (accountsData.data?.length > 0 && !formData.account_id) {
@@ -138,18 +166,10 @@ export function AddTransactionModal({
         }] : undefined
       };
 
-      const response = await fetch(`/api/transactions?household_id=${householdId}`, {
+      await authenticatedFetch(`/api/transactions?household_id=${householdId}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify(transactionData),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create transaction');
-      }
 
       // Success!
       onSuccess?.();
@@ -180,7 +200,14 @@ export function AddTransactionModal({
 
   if (!isOpen) return null;
 
-  const currentCategories = categories.filter(c => c.kind === formData.direction);
+  // Filter categories by transaction direction
+  const currentCategories = categories.filter(category => {
+    if (formData.direction === 'outflow') {
+      return category.kind === 'expense';
+    } else {
+      return category.kind === 'income';
+    }
+  });
   const selectedAccount = accounts.find(a => a.id === formData.account_id);
 
   return (

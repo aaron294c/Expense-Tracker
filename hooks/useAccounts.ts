@@ -2,6 +2,7 @@
 // hooks/useAccounts.ts - Fixed version
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabaseBrowser';
+import { authenticatedFetch } from '../lib/api';
 
 interface AccountWithBalance {
   account_id: string;
@@ -32,14 +33,7 @@ export function useAccounts(householdId: string | null) {
       setError(null);
 
       const params = new URLSearchParams({ household_id: householdId });
-      const response = await fetch(`/api/accounts?${params}`);
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to fetch accounts');
-      }
-
-      const result = await response.json();
+      const result = await authenticatedFetch(`/api/accounts?${params}`);
       setAccounts(result.data || []);
 
     } catch (err) {

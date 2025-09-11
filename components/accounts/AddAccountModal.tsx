@@ -1,5 +1,6 @@
 // components/accounts/AddAccountModal.tsx
 import React, { useState } from 'react';
+import { authenticatedFetch } from '../../lib/api';
 import { X, DollarSign, Building2, CreditCard, PiggyBank, Wallet } from 'lucide-react';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 
@@ -71,11 +72,8 @@ export function AddAccountModal({ isOpen, onClose, householdId, onSuccess }: Add
     setError(null);
 
     try {
-      const response = await fetch(`/api/accounts?household_id=${householdId}`, {
+      await authenticatedFetch(`/api/accounts?household_id=${householdId}`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         body: JSON.stringify({
           name: formData.name.trim(),
           type: formData.type,
@@ -83,11 +81,6 @@ export function AddAccountModal({ isOpen, onClose, householdId, onSuccess }: Add
           currency: formData.currency
         }),
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create account');
-      }
 
       // Reset form
       setFormData({

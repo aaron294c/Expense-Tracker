@@ -1,5 +1,6 @@
 // /hooks/useCategorySummary.ts
 import { useState, useEffect, useCallback } from 'react';
+import { authenticatedFetch } from '../lib/api';
 
 interface CategorySummary {
   household_id: string;
@@ -49,13 +50,7 @@ export function useCategorySummary(
       setError(null);
 
       // Use API route instead of direct Supabase query to bypass RLS issues
-      const response = await fetch(`/api/category-summary?household_id=${householdId}&month=${month}`);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const data = await response.json();
+      const data = await authenticatedFetch(`/api/category-summary?household_id=${householdId}&month=${month}`);
       setSummaries(data.summaries || []);
 
     } catch (err) {
