@@ -184,7 +184,7 @@ export function AddTransactionModal({
 
       console.log('Submitting transaction:', transactionData);
 
-      const result = await authenticatedFetch(`/api/transactions?household_id=${householdId}`, {
+      const result = await authenticatedFetch(`/api/transactions-fixed?household_id=${householdId}`, {
         method: 'POST',
         body: JSON.stringify(transactionData),
       });
