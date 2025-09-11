@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/router';
-import { Layout } from '../../components/Layout';
-import { AddTransactionModal } from '../../components/transactions/AddTransactionModal';
+import Layout from '../../components/Layout';
+import { BasicTransactionForm } from '../../components/forms/BasicTransactionForm';
 
 export default function AddTransactionPage() {
   const router = useRouter();
@@ -9,12 +9,12 @@ export default function AddTransactionPage() {
 
   const handleClose = () => {
     setIsModalOpen(false);
-    router.push('/');
+    router.push('/transactions');
   };
 
   return (
     <Layout showNavigation={false}>
-      <AddTransactionModal 
+      <BasicTransactionForm 
         isOpen={isModalOpen} 
         onClose={handleClose}
       />

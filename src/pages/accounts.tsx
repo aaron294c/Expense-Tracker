@@ -1,5 +1,5 @@
 import React from 'react';
-import { Layout } from '../components/Layout';
+import Layout from '../../components/Layout';
 import { AccountList } from '../components/accounts/AccountList';
 
 export default function AccountsPage() {

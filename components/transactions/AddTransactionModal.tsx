@@ -1,11 +1,11 @@
-// components/transactions/AddTransactionModal.tsx - Enhanced with full database integration
+// components/transactions/AddTransactionModal.tsx - WORKING transaction form with guaranteed submit
 import React, { useState, useEffect } from 'react';
 import { X, Calendar, DollarSign, Tag, Plus, Minus, CreditCard, Building2, PiggyBank, Wallet } from 'lucide-react';
 import { LoadingSpinner } from '../common/LoadingSpinner';
 import { authenticatedFetch } from '../../lib/api';
 
 interface Account {
-  id: string;
+  account_id: string;
   name: string;
   type: string;
   current_balance: number;
@@ -49,6 +49,7 @@ export function AddTransactionModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   
   const [formData, setFormData] = useState({
     account_id: '',
@@ -75,8 +76,16 @@ export function AddTransactionModal({
         occurred_at: new Date().toISOString().split('T')[0],
       });
       setError(null);
+      setSuccessMessage(null);
     }
   }, [isOpen, householdId, defaultDirection]);
+
+  // Auto-select first account when accounts load
+  useEffect(() => {
+    if (accounts.length > 0 && !formData.account_id && isOpen) {
+      setFormData(prev => ({ ...prev, account_id: accounts[0].account_id }));
+    }
+  }, [accounts, formData.account_id, isOpen]);
 
   const createDefaultCategories = async () => {
     const defaultCategories = [
@@ -121,6 +130,9 @@ export function AddTransactionModal({
         authenticatedFetch(`/api/categories?household_id=${householdId}`)
       ]);
 
+      console.log('Fetched accounts:', accountsData.data);
+      console.log('Fetched categories:', categoriesData.data);
+
       setAccounts(accountsData.data || []);
       setCategories(categoriesData.data || []);
 
@@ -129,10 +141,6 @@ export function AddTransactionModal({
         await createDefaultCategories();
       }
 
-      // Auto-select first account if available
-      if (accountsData.data?.length > 0 && !formData.account_id) {
-        setFormData(prev => ({ ...prev, account_id: accountsData.data[0].id }));
-      }
     } catch (err) {
       console.error('Error fetching data:', err);
       setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -144,13 +152,21 @@ export function AddTransactionModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Form submitted:', formData);
+    
     if (!formData.account_id || !formData.amount || !formData.description) {
       setError('Please fill in all required fields');
       return;
     }
 
+    if (parseFloat(formData.amount) <= 0) {
+      setError('Amount must be greater than 0');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
+    setSuccessMessage(null);
     
     try {
       const transactionData = {
@@ -166,17 +182,40 @@ export function AddTransactionModal({
         }] : undefined
       };
 
-      await authenticatedFetch(`/api/transactions?household_id=${householdId}`, {
+      console.log('Submitting transaction:', transactionData);
+
+      const result = await authenticatedFetch(`/api/transactions?household_id=${householdId}`, {
         method: 'POST',
         body: JSON.stringify(transactionData),
       });
 
-      // Success!
+      console.log('Transaction created:', result);
+      
+      // Show immediate success feedback
+      setSuccessMessage(`🎉 ${formData.direction === 'outflow' ? 'Expense' : 'Income'} of $${formData.amount} added successfully! Transaction saved to your account.`);
+      
+      // Trigger success callback immediately for data refresh
       onSuccess?.();
-      onClose();
+      
+      // Reset form for "add another" functionality
+      setFormData({
+        account_id: accounts.length > 0 ? accounts[0].account_id : '',
+        amount: '',
+        description: '',
+        merchant: '',
+        direction: formData.direction,
+        category_id: '',
+        occurred_at: new Date().toISOString().split('T')[0],
+      });
+      
+      // Close modal after success message is shown
+      setTimeout(() => {
+        onClose();
+      }, 2000);
+
     } catch (err) {
       console.error('Error creating transaction:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create transaction');
+      setError(err instanceof Error ? err.message : 'Failed to create transaction. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -184,18 +223,6 @@ export function AddTransactionModal({
 
   const handleQuickAmount = (amount: number) => {
     setFormData(prev => ({ ...prev, amount: amount.toString() }));
-  };
-
-  const incrementAmount = () => {
-    const current = parseFloat(formData.amount) || 0;
-    setFormData(prev => ({ ...prev, amount: (current + 1).toString() }));
-  };
-
-  const decrementAmount = () => {
-    const current = parseFloat(formData.amount) || 0;
-    if (current > 1) {
-      setFormData(prev => ({ ...prev, amount: (current - 1).toString() }));
-    }
   };
 
   if (!isOpen) return null;
@@ -208,7 +235,7 @@ export function AddTransactionModal({
       return category.kind === 'income';
     }
   });
-  const selectedAccount = accounts.find(a => a.id === formData.account_id);
+  const selectedAccount = accounts.find(a => a.account_id === formData.account_id);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
@@ -233,24 +260,44 @@ export function AddTransactionModal({
           </div>
         )}
 
+        {/* Success Message */}
+        {successMessage && (
+          <div className="p-6">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+              <p className="text-green-700 text-sm font-medium">{successMessage}</p>
+            </div>
+          </div>
+        )}
+
         {/* Error State */}
         {error && (
           <div className="p-6">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <p className="text-red-700 text-sm">{error}</p>
-              <button
-                onClick={fetchData}
-                className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium"
-              >
-                Try Again
-              </button>
+              {!isLoading && (
+                <button
+                  onClick={fetchData}
+                  className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium"
+                >
+                  Try Again
+                </button>
+              )}
             </div>
           </div>
         )}
 
         {/* Form */}
-        {!isLoading && !error && (
-          <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {!isLoading && (
+          <form 
+            onSubmit={handleSubmit} 
+            className="p-6 space-y-6"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !isSubmitting && formData.account_id && formData.amount && formData.description) {
+                e.preventDefault();
+                handleSubmit(e as any);
+              }
+            }}
+          >
             {/* Transaction Type Toggle */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
@@ -296,36 +343,20 @@ export function AddTransactionModal({
                   min="0"
                   value={formData.amount}
                   onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                  className="w-full pl-10 pr-20 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   placeholder="0.00"
                   required
                 />
-                <div className="absolute right-2 top-2 flex gap-1">
-                  <button
-                    type="button"
-                    onClick={decrementAmount}
-                    className="p-1 text-gray-400 hover:text-gray-600 rounded"
-                  >
-                    <Minus size={14} />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={incrementAmount}
-                    className="p-1 text-gray-400 hover:text-gray-600 rounded"
-                  >
-                    <Plus size={14} />
-                  </button>
-                </div>
               </div>
               
               {/* Quick Amount Buttons */}
-              <div className="flex gap-2 mt-2">
+              <div className="flex gap-2 mt-2 overflow-x-auto">
                 {QUICK_AMOUNTS.map((amount) => (
                   <button
                     key={amount}
                     type="button"
                     onClick={() => handleQuickAmount(amount)}
-                    className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors whitespace-nowrap"
                   >
                     ${amount}
                   </button>
@@ -346,14 +377,11 @@ export function AddTransactionModal({
                 required
               >
                 <option value="">Select account</option>
-                {accounts.map((account) => {
-                  const IconComponent = ACCOUNT_ICONS[account.type as keyof typeof ACCOUNT_ICONS] || Building2;
-                  return (
-                    <option key={account.id} value={account.id}>
-                      {account.name} ({account.type}) - ${account.current_balance?.toFixed(2) || '0.00'}
-                    </option>
-                  );
-                })}
+                {accounts.map((account) => (
+                  <option key={account.account_id} value={account.account_id}>
+                    {account.name} ({account.type}) - ${account.current_balance?.toFixed(2) || '0.00'}
+                  </option>
+                ))}
               </select>
               {selectedAccount && (
                 <p className="mt-1 text-sm text-gray-500">
@@ -396,10 +424,10 @@ export function AddTransactionModal({
             {/* Category Selection */}
             <div>
               <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
-                Category
+                Category (Optional)
               </label>
               {currentCategories.length > 0 ? (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
                   {currentCategories.map((category) => (
                     <button
                       key={category.id}
@@ -420,10 +448,10 @@ export function AddTransactionModal({
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-4 text-gray-500">
+                <div className="text-center py-4 text-gray-500 border border-gray-200 rounded-lg">
                   <Tag size={24} className="mx-auto mb-2" />
                   <p className="text-sm">No {formData.direction === 'outflow' ? 'expense' : 'income'} categories available</p>
-                  <p className="text-xs mt-1">You can add categories in Settings</p>
+                  <p className="text-xs mt-1">Categories will be created automatically</p>
                 </div>
               )}
             </div>
@@ -431,7 +459,7 @@ export function AddTransactionModal({
             {/* Date */}
             <div>
               <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
-                Date
+                Date *
               </label>
               <div className="relative">
                 <Calendar size={16} className="absolute left-3 top-3 text-gray-400" />
@@ -446,34 +474,53 @@ export function AddTransactionModal({
               </div>
             </div>
 
-            {/* Submit Buttons */}
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 py-3 px-4 text-gray-600 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                disabled={isSubmitting}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className={`flex-1 py-3 px-4 font-medium rounded-lg transition-colors flex items-center justify-center ${
-                  formData.direction === 'outflow'
-                    ? 'bg-red-600 hover:bg-red-700 text-white'
-                    : 'bg-green-600 hover:bg-green-700 text-white'
-                } disabled:opacity-50`}
-                disabled={isSubmitting || !formData.account_id || !formData.amount || !formData.description}
-              >
-                {isSubmitting ? (
-                  <>
-                    <LoadingSpinner size="sm" className="mr-2" />
-                    Adding...
-                  </>
+            {/* Submit Buttons - PROMINENT AND VISIBLE */}
+            <div className="sticky bottom-0 bg-white p-4 border-t-2 border-gray-200 rounded-b-2xl">
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 py-4 px-6 text-gray-700 font-semibold bg-gray-100 border border-gray-300 rounded-xl hover:bg-gray-200 transition-colors shadow-sm"
+                  disabled={isSubmitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className={`flex-2 py-4 px-8 font-bold text-lg rounded-xl transition-all transform active:scale-95 flex items-center justify-center shadow-lg ${
+                    formData.direction === 'outflow'
+                      ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-red-200'
+                      : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-green-200'
+                  } disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none`}
+                  disabled={isSubmitting || !formData.account_id || !formData.amount || !formData.description}
+                  style={{ minHeight: '56px' }}
+                >
+                  {isSubmitting ? (
+                    <>
+                      <LoadingSpinner size="sm" className="mr-3" />
+                      <span>Adding...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="mr-2">{formData.direction === 'outflow' ? '💸' : '💰'}</span>
+                      <span>Add {formData.direction === 'outflow' ? 'Expense' : 'Income'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {/* Form Status Indicator */}
+              <div className="mt-3 text-center">
+                {(!formData.account_id || !formData.amount || !formData.description) ? (
+                  <p className="text-sm text-amber-600 font-medium">
+                    ⚠️ Please fill in all required fields to submit
+                  </p>
                 ) : (
-                  `Add ${formData.direction === 'outflow' ? 'Expense' : 'Income'}`
+                  <p className="text-sm text-green-600 font-medium">
+                    ✅ Ready to submit • Press Enter or click the button above
+                  </p>
                 )}
-              </button>
+              </div>
             </div>
           </form>
         )}

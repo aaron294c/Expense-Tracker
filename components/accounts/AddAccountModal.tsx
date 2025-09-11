@@ -13,34 +13,34 @@ interface AddAccountModalProps {
 
 const ACCOUNT_TYPES = [
   {
-    value: 'current',
+    value: 'current' as const,
     label: 'Checking Account',
     icon: Building2,
     description: 'For daily transactions and bills',
     color: 'bg-blue-50 border-blue-200 text-blue-700'
   },
   {
-    value: 'savings',
+    value: 'savings' as const,
     label: 'Savings Account',
     icon: PiggyBank,
     description: 'For saving money and earning interest',
     color: 'bg-green-50 border-green-200 text-green-700'
   },
   {
-    value: 'credit',
+    value: 'credit' as const,
     label: 'Credit Card',
     icon: CreditCard,
     description: 'For credit purchases and building credit',
     color: 'bg-purple-50 border-purple-200 text-purple-700'
   },
   {
-    value: 'cash',
+    value: 'cash' as const,
     label: 'Cash',
     icon: Wallet,
     description: 'Physical cash on hand',
     color: 'bg-orange-50 border-orange-200 text-orange-700'
   }
-];
+] as const;
 
 const CURRENCIES = [
   { code: 'USD', symbol: '$', name: 'US Dollar' },
@@ -50,10 +50,19 @@ const CURRENCIES = [
   { code: 'AUD', symbol: 'A$', name: 'Australian Dollar' }
 ];
 
+type AccountType = 'current' | 'savings' | 'credit' | 'cash';
+
+interface FormData {
+  name: string;
+  type: AccountType;
+  initial_balance: string;
+  currency: string;
+}
+
 export function AddAccountModal({ isOpen, onClose, householdId, onSuccess }: AddAccountModalProps) {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
-    type: 'current' as const,
+    type: 'current',
     initial_balance: '',
     currency: 'USD'
   });
@@ -151,7 +160,7 @@ export function AddAccountModal({ isOpen, onClose, householdId, onSuccess }: Add
                   <button
                     key={accountType.value}
                     type="button"
-                    onClick={() => setFormData(prev => ({ ...prev, type: accountType.value as any }))}
+                    onClick={() => setFormData(prev => ({ ...prev, type: accountType.value }))}
                     className={`p-4 rounded-lg border-2 text-left transition-all ${
                       isSelected
                         ? accountType.color

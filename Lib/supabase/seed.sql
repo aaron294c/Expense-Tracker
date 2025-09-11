@@ -1,4 +1,0 @@
--- Minimal seed placeholder. Add demo data here if desired.
--- Example:
--- insert into public.households (id, name, base_currency)
--- values (gen_random_uuid(), 'Demo Household', 'GBP');

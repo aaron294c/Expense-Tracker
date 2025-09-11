@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from './AuthProvider';
+import { useAuth } from '../../contexts/AuthContext';
 import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
 export default function AuthComponent() {

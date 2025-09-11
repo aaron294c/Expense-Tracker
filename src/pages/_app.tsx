@@ -1,7 +1,7 @@
 import type { AppProps } from 'next/app';
 import { SessionContextProvider } from '@supabase/auth-helpers-react';
-import { AuthProvider } from '../../components/auth/AuthProvider';
-import { createClient } from '../lib/supabaseBrowser';
+import { AuthProvider } from '../../contexts/AuthContext';
+import { createClient } from '../../lib/supabaseBrowser';
 import '../styles/globals.css';
 
 const supabase = createClient();

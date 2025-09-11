@@ -9,25 +9,25 @@ const navItems = [
     label: 'Home',
   },
   {
-    href: '/insights',
-    icon: 'bar_chart',
-    label: 'Insights',
+    href: '/transactions',
+    icon: 'receipt_long',
+    label: 'Transactions',
   },
   {
-    href: '/transactions/new',
+    href: '/transactions/add',
     icon: 'add',
     label: 'Add',
     isButton: true,
   },
   {
+    href: '/budgets',
+    icon: 'pie_chart',
+    label: 'Budgets',
+  },
+  {
     href: '/accounts',
     icon: 'account_balance_wallet',
     label: 'Accounts',
-  },
-  {
-    href: '/rules',
-    icon: 'settings',
-    label: 'Rules',
   },
 ]
 
