@@ -5,6 +5,7 @@ import { AppLayout } from '../components/layout/AppLayout';
 import { Card } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { useHousehold } from '../hooks/useHousehold';
+import { supabase } from '@/lib/supabaseBrowser';
 import { authenticatedFetch } from '../lib/api';
 import { 
   Plus, 
@@ -231,13 +232,22 @@ function BudgetAllocator({
 function BudgetsContent() {
   const { currentHousehold } = useHousehold();
   const currency = getCurrencyFromHousehold(currentHousehold || {}, 'USD');
-  
+
+  // === NEW: wait for auth to hydrate ===
+  const [authReady, setAuthReady] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(() => { if (mounted) setAuthReady(true); });
+    return () => { mounted = false; };
+  }, []);
+  // =====================================
+
   // Current month by default
   const [currentMonth, setCurrentMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
-  
+
   const [data, setData] = useState<BudgetData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -255,14 +265,22 @@ function BudgetsContent() {
       setIsLoading(true);
       setError(null);
 
-      const response = await authenticatedFetch(`/api/budgets?household_id=${currentHousehold.id}&month=${currentMonth}`);
-      
-      if (response.error) {
+      const response = await authenticatedFetch(
+        `/api/budgets?household_id=${currentHousehold.id}&month=${currentMonth}`
+      );
+
+      if (response?.error) {
         throw new Error(response.error);
       }
 
-      setData(response.data || { categories: [], all_categories: [], month: currentMonth, household_id: currentHousehold.id });
-
+      setData(
+        response?.data || {
+          categories: [],
+          all_categories: [],
+          month: currentMonth,
+          household_id: currentHousehold.id,
+        }
+      );
     } catch (err) {
       console.error('Error fetching budgets:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch budgets');
@@ -283,14 +301,12 @@ function BudgetsContent() {
         body: JSON.stringify({
           household_id: currentHousehold.id,
           month: currentMonth,
-          category_budgets: budgets.map(b => ({ ...b, rollover_enabled: false }))
+          category_budgets: budgets.map(b => ({ ...b, rollover_enabled: false })),
         }),
       });
 
-      // Refresh data
       await fetchBudgets();
       setShowAllocator(false);
-
     } catch (err) {
       console.error('Error saving budgets:', err);
       setError(err instanceof Error ? err.message : 'Failed to save budgets');
@@ -299,33 +315,30 @@ function BudgetsContent() {
     }
   };
 
+  // === UPDATED: only fetch when auth + household are ready ===
   useEffect(() => {
-    if (currentHousehold?.id) {
-      fetchBudgets();
-    }
-  }, [currentHousehold?.id, currentMonth]);
+    if (!authReady) return;
+    if (!currentHousehold?.id) return;
+    fetchBudgets();
+  }, [authReady, currentHousehold?.id, currentMonth]);
+  // =====================================
 
   const navigateMonth = (direction: 'prev' | 'next') => {
     const [year, month] = currentMonth.split('-').map(Number);
     const date = new Date(year, month - 1);
-    
-    if (direction === 'prev') {
-      date.setMonth(date.getMonth() - 1);
-    } else {
-      date.setMonth(date.getMonth() + 1);
-    }
-    
+    date.setMonth(date.getMonth() + (direction === 'prev' ? -1 : 1));
     const newMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
     setCurrentMonth(newMonth);
   };
 
   const getMonthName = (monthString: string) => {
     const [year, month] = monthString.split('-');
-    const date = new Date(parseInt(year), parseInt(month) - 1);
+    const date = new Date(parseInt(year, 10), parseInt(month, 10) - 1);
     return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   };
 
-  if (isLoading) {
+  // Loading gate (include authReady to avoid flicker)
+  if (!authReady || isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
@@ -336,13 +349,18 @@ function BudgetsContent() {
     );
   }
 
+  // === UPDATED: friendlier error text ===
   if (error) {
     return (
       <Card className="p-6">
         <div className="text-center">
           <AlertTriangle className="mx-auto h-12 w-12 text-red-500 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Error Loading Budgets</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="text-gray-600 mb-4">
+            {error === 'Unauthorized'
+              ? 'Your session may have expired. Please sign in again.'
+              : error}
+          </p>
           <button
             onClick={fetchBudgets}
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
@@ -353,6 +371,7 @@ function BudgetsContent() {
       </Card>
     );
   }
+  // =====================================
 
   const expenseCategories = data?.categories?.filter(c => c.category_kind === 'expense') || [];
   const totalBudget = expenseCategories.reduce((sum, c) => sum + (c.budget || 0), 0);
@@ -408,6 +427,7 @@ function BudgetsContent() {
       )}
 
       {/* Overview Cards */}
+      {/* (unchanged UI below) */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="p-6">
           <div className="flex items-center gap-4">
@@ -425,18 +445,12 @@ function BudgetsContent() {
 
         <Card className="p-6">
           <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-full ${
-              overallPercentage > 100 ? 'bg-red-100' : 'bg-green-100'
-            }`}>
-              <TrendingDown className={`h-6 w-6 ${
-                overallPercentage > 100 ? 'text-red-600' : 'text-green-600'
-              }`} />
+            <div className={`p-3 rounded-full ${overallPercentage > 100 ? 'bg-red-100' : 'bg-green-100'}`}>
+              <TrendingDown className={`h-6 w-6 ${overallPercentage > 100 ? 'text-red-600' : 'text-green-600'}`} />
             </div>
             <div>
               <p className="text-sm text-gray-600">Total Spent</p>
-              <p className={`text-2xl font-bold ${
-                overallPercentage > 100 ? 'text-red-600' : 'text-gray-900'
-              }`}>
+              <p className={`text-2xl font-bold ${overallPercentage > 100 ? 'text-red-600' : 'text-gray-900'}`}>
                 {formatCurrency(totalSpent, currency)}
               </p>
               <p className="text-sm text-gray-500">
@@ -448,9 +462,7 @@ function BudgetsContent() {
 
         <Card className="p-6">
           <div className="flex items-center gap-4">
-            <div className={`p-3 rounded-full ${
-              totalRemaining < 0 ? 'bg-red-100' : 'bg-green-100'
-            }`}>
+            <div className={`p-3 rounded-full ${totalRemaining < 0 ? 'bg-red-100' : 'bg-green-100'}`}>
               {totalRemaining < 0 ? (
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               ) : (
@@ -461,9 +473,7 @@ function BudgetsContent() {
               <p className="text-sm text-gray-600">
                 {totalRemaining < 0 ? 'Over Budget' : 'Remaining'}
               </p>
-              <p className={`text-2xl font-bold ${
-                totalRemaining < 0 ? 'text-red-600' : 'text-green-600'
-              }`}>
+              <p className={`text-2xl font-bold ${totalRemaining < 0 ? 'text-red-600' : 'text-green-600'}`}>
                 {formatCurrency(Math.abs(totalRemaining), currency)}
               </p>
             </div>
@@ -479,11 +489,7 @@ function BudgetsContent() {
             {expenseCategories
               .sort((a, b) => (b.budget_percentage || 0) - (a.budget_percentage || 0))
               .map((item) => (
-                <BudgetProgress
-                  key={item.category_id}
-                  item={item}
-                  currency={currency}
-                />
+                <BudgetProgress key={item.category_id} item={item} currency={currency} />
               ))}
           </div>
         ) : (
@@ -534,6 +540,7 @@ function BudgetsContent() {
     </div>
   );
 }
+
 
 function BudgetsPage() {
   return (
