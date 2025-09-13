@@ -2,32 +2,36 @@
 import React from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import { Home, CreditCard, Target, TrendingUp, Settings } from 'lucide-react';
 
 const items = [
-  { href: '/dashboard',   label: 'Dashboard',   icon: '🏠' },
-  { href: '/transactions',label: 'Transactions',icon: '💳' },
-  { href: '/budgets',     label: 'Budgets',     icon: '📊' },
-  { href: '/settings',    label: 'Settings',    icon: '⚙️' },
+  { href: '/dashboard',    label: 'Home',        icon: Home },
+  { href: '/transactions', label: 'Transactions', icon: CreditCard },
+  { href: '/budgets',      label: 'Budgets',     icon: Target },
+  { href: '/insights',     label: 'Insights',    icon: TrendingUp },
+  { href: '/settings',     label: 'Settings',    icon: Settings },
 ];
 
 export function Navigation() {
   const router = useRouter();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2 z-50">
-      <div className="max-w-md mx-auto flex justify-around">
+    <nav className="bottom-dock">
+      <div className="dock-grid">
         {items.map((item) => {
-          const active = router.pathname === item.href;
+          const active = router.pathname === item.href || 
+                          (item.href === '/dashboard' && router.pathname === '/');
+          const IconComponent = item.icon;
+          
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-1 p-2 rounded-lg transition-colors
-                ${active ? 'text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              className={`dock-item motion-tap ${active ? 'active' : ''}`}
               aria-current={active ? 'page' : undefined}
             >
-              <span className="text-2xl leading-none">{item.icon}</span>
-              <span className="text-xs">{item.label}</span>
+              <IconComponent className="dock-icon" />
+              <span className="dock-label">{item.label}</span>
             </Link>
           );
         })}

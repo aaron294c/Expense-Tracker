@@ -238,56 +238,61 @@ export function AddTransactionModal({
   const selectedAccount = accounts.find(a => a.account_id === formData.account_id);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center z-50">
-      <div className="bg-white w-full max-w-md rounded-t-2xl max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">Add Transaction</h2>
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            disabled={isSubmitting}
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* Loading State */}
-        {isLoading && (
-          <div className="p-6 text-center">
-            <LoadingSpinner size="lg" />
-            <p className="mt-2 text-gray-600">Loading accounts and categories...</p>
-          </div>
-        )}
-
-        {/* Success Message */}
-        {successMessage && (
-          <div className="p-6">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-green-700 text-sm font-medium">{successMessage}</p>
+    <div className="fixed inset-0 z-50 bg-black/40">
+      <div className="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[480px] rounded-t-3xl bg-white border border-gray-100 shadow-[0_-20px_60px_rgba(0,0,0,0.25)]">
+        <div className="mx-auto my-2 h-1.5 w-10 rounded-full bg-gray-300"></div>
+        <div className="max-h-[85dvh] overflow-y-auto px-4 pb-24">
+          <div className="flex items-center justify-between py-4">
+            <div>
+              <h2 className="text-[20px] font-semibold text-gray-900">Add Transaction</h2>
+              <p className="text-[13px] text-gray-500">Record your expense or income</p>
             </div>
+            <button
+              onClick={onClose}
+              className="size-9 rounded-xl grid place-items-center text-gray-600 hover:bg-gray-50 transition-colors"
+              disabled={isSubmitting}
+              aria-label="Close modal"
+            >
+              <X size={20} />
+            </button>
           </div>
-        )}
 
-        {/* Error State */}
-        {error && (
-          <div className="p-6">
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-              <p className="text-red-700 text-sm">{error}</p>
-              {!isLoading && (
-                <button
-                  onClick={fetchData}
-                  className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium"
-                >
-                  Try Again
-                </button>
-              )}
+          {/* Loading State */}
+          {isLoading && (
+            <div className="p-6 text-center">
+              <LoadingSpinner size="lg" />
+              <p className="mt-2 text-gray-600">Loading accounts and categories...</p>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Form */}
-        {!isLoading && (
+          {/* Success Message */}
+          {successMessage && (
+            <div className="p-6">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <p className="text-green-700 text-sm font-medium">{successMessage}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Error State */}
+          {error && (
+            <div className="p-6">
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <p className="text-red-700 text-sm">{error}</p>
+                {!isLoading && (
+                  <button
+                    onClick={fetchData}
+                    className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium"
+                  >
+                    Try Again
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Form */}
+          {!isLoading && (
           <form 
             onSubmit={handleSubmit} 
             className="p-6 space-y-6"
@@ -298,65 +303,60 @@ export function AddTransactionModal({
               }
             }}
           >
-            {/* Transaction Type Toggle */}
+            {/* Expense/Income Segmented Control */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
-              <div className="grid grid-cols-2 gap-2">
+              <label className="block text-[13px] text-gray-500 mb-3">Transaction Type</label>
+              <div className="inline-flex rounded-xl bg-gray-50 p-1 border border-gray-200">
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, direction: 'outflow', category_id: '' }))}
-                  className={`p-3 rounded-lg border text-center transition-colors flex items-center justify-center gap-2 ${
+                  className={`px-4 py-2 rounded-lg text-[14px] transition-all duration-200 ${
                     formData.direction === 'outflow'
-                      ? 'bg-red-50 border-red-200 text-red-700'
-                      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                      ? 'bg-white shadow font-semibold text-gray-900'
+                      : 'text-gray-600'
                   }`}
                 >
-                  <Minus size={16} />
                   Expense
                 </button>
                 <button
                   type="button"
                   onClick={() => setFormData(prev => ({ ...prev, direction: 'inflow', category_id: '' }))}
-                  className={`p-3 rounded-lg border text-center transition-colors flex items-center justify-center gap-2 ${
+                  className={`px-4 py-2 rounded-lg text-[14px] transition-all duration-200 ${
                     formData.direction === 'inflow'
-                      ? 'bg-green-50 border-green-200 text-green-700'
-                      : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                      ? 'bg-white shadow font-semibold text-gray-900'
+                      : 'text-gray-600'
                   }`}
                 >
-                  <Plus size={16} />
                   Income
                 </button>
               </div>
             </div>
 
-            {/* Amount with Quick Buttons */}
+            {/* Amount Input */}
             <div>
-              <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="amount" className="block text-[13px] text-gray-500 mb-3">
                 Amount *
               </label>
-              <div className="relative">
-                <DollarSign size={16} className="absolute left-3 top-3 text-gray-400" />
-                <input
-                  id="amount"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.amount}
-                  onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="0.00"
-                  required
-                />
-              </div>
-              
-              {/* Quick Amount Buttons */}
-              <div className="flex gap-2 mt-2 overflow-x-auto">
+              <input
+                id="amount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.amount}
+                onChange={(e) => setFormData(prev => ({ ...prev, amount: e.target.value }))}
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-[15px] placeholder:text-gray-400 focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-200"
+                placeholder="0.00"
+                required
+              />
+
+              {/* Quick Amount Chips */}
+              <div className="flex gap-2 flex-wrap mt-2">
                 {QUICK_AMOUNTS.map((amount) => (
                   <button
                     key={amount}
                     type="button"
                     onClick={() => handleQuickAmount(amount)}
-                    className="px-3 py-1 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors whitespace-nowrap"
+                    className="rounded-xl border border-gray-200 px-3 py-2 text-[14px] bg-white hover:bg-gray-50"
                   >
                     ${amount}
                   </button>
@@ -366,14 +366,14 @@ export function AddTransactionModal({
 
             {/* Account Selection */}
             <div>
-              <label htmlFor="account" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="account" className="block text-[13px] text-gray-500 mb-3">
                 Account *
               </label>
               <select
                 id="account"
                 value={formData.account_id}
                 onChange={(e) => setFormData(prev => ({ ...prev, account_id: e.target.value }))}
-                className="w-full py-3 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-[15px] placeholder:text-gray-400 focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-200"
                 required
               >
                 <option value="">Select account</option>
@@ -384,7 +384,7 @@ export function AddTransactionModal({
                 ))}
               </select>
               {selectedAccount && (
-                <p className="mt-1 text-sm text-gray-500">
+                <p className="mt-1 text-[12px] text-gray-500">
                   Current balance: ${selectedAccount.current_balance?.toFixed(2) || '0.00'}
                 </p>
               )}
@@ -392,7 +392,7 @@ export function AddTransactionModal({
 
             {/* Description */}
             <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="description" className="block text-[13px] text-gray-500 mb-3">
                 Description *
               </label>
               <input
@@ -400,7 +400,7 @@ export function AddTransactionModal({
                 type="text"
                 value={formData.description}
                 onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                className="w-full py-3 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-[15px] placeholder:text-gray-400 focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-200"
                 placeholder="What was this for?"
                 required
               />
@@ -408,7 +408,7 @@ export function AddTransactionModal({
 
             {/* Merchant (Optional) */}
             <div>
-              <label htmlFor="merchant" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="merchant" className="block text-[13px] text-gray-500 mb-3">
                 Merchant (Optional)
               </label>
               <input
@@ -416,114 +416,81 @@ export function AddTransactionModal({
                 type="text"
                 value={formData.merchant}
                 onChange={(e) => setFormData(prev => ({ ...prev, merchant: e.target.value }))}
-                className="w-full py-3 px-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-[15px] placeholder:text-gray-400 focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-200"
                 placeholder="Store or company name"
               />
             </div>
 
-            {/* Category Selection */}
+            {/* Category Grid */}
             <div>
-              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-[13px] text-gray-500 mb-3">
                 Category (Optional)
               </label>
               {currentCategories.length > 0 ? (
-                <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                <div className="grid grid-cols-3 gap-3">
                   {currentCategories.map((category) => (
                     <button
                       key={category.id}
                       type="button"
-                      onClick={() => setFormData(prev => ({ 
-                        ...prev, 
-                        category_id: prev.category_id === category.id ? '' : category.id 
+                      onClick={() => setFormData(prev => ({
+                        ...prev,
+                        category_id: prev.category_id === category.id ? '' : category.id
                       }))}
-                      className={`p-3 rounded-lg border text-center transition-colors ${
+                      className={`size-[64px] rounded-xl bg-white ring-1 ring-gray-100 shadow-inner grid place-items-center hover:shadow transition-all duration-200 cursor-pointer ${
                         formData.category_id === category.id
-                          ? 'bg-blue-50 border-blue-200 text-blue-700'
-                          : 'bg-gray-50 border-gray-200 text-gray-700 hover:bg-gray-100'
+                          ? 'ring-2 ring-blue-400/70 shadow-[0_0_0_4px_rgba(59,130,246,0.08)]'
+                          : ''
                       }`}
                     >
-                      <div className="text-2xl mb-1">{category.icon}</div>
-                      <div className="text-xs font-medium">{category.name}</div>
+                      <span className="size-6">{category.icon}</span>
                     </button>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-4 text-gray-500 border border-gray-200 rounded-lg">
-                  <Tag size={24} className="mx-auto mb-2" />
-                  <p className="text-sm">No {formData.direction === 'outflow' ? 'expense' : 'income'} categories available</p>
-                  <p className="text-xs mt-1">Categories will be created automatically</p>
+                <div className="text-center py-8">
+                  <div className="text-4xl mb-2">📝</div>
+                  <p className="text-[13px] text-gray-500 mb-4">No categories yet</p>
+                  <p className="text-[12px] text-gray-400">
+                    Categories will be created automatically
+                  </p>
                 </div>
               )}
             </div>
 
             {/* Date */}
             <div>
-              <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="date" className="block text-[13px] text-gray-500 mb-3">
                 Date *
               </label>
-              <div className="relative">
-                <Calendar size={16} className="absolute left-3 top-3 text-gray-400" />
-                <input
-                  id="date"
-                  type="date"
-                  value={formData.occurred_at}
-                  onChange={(e) => setFormData(prev => ({ ...prev, occurred_at: e.target.value }))}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  required
-                />
-              </div>
+              <input
+                id="date"
+                type="date"
+                value={formData.occurred_at}
+                onChange={(e) => setFormData(prev => ({ ...prev, occurred_at: e.target.value }))}
+                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-[15px] placeholder:text-gray-400 focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-200"
+                required
+              />
             </div>
 
-            {/* Submit Buttons - PROMINENT AND VISIBLE */}
-            <div className="sticky bottom-0 bg-white p-4 border-t-2 border-gray-200 rounded-b-2xl">
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="flex-1 py-4 px-6 text-gray-700 font-semibold bg-gray-100 border border-gray-300 rounded-xl hover:bg-gray-200 transition-colors shadow-sm"
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className={`flex-2 py-4 px-8 font-bold text-lg rounded-xl transition-all transform active:scale-95 flex items-center justify-center shadow-lg ${
-                    formData.direction === 'outflow'
-                      ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-red-200'
-                      : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-green-200'
-                  } disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none`}
-                  disabled={isSubmitting || !formData.account_id || !formData.amount || !formData.description}
-                  style={{ minHeight: '56px' }}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <LoadingSpinner size="sm" className="mr-3" />
-                      <span>Adding...</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="mr-2">{formData.direction === 'outflow' ? '💸' : '💰'}</span>
-                      <span>Add {formData.direction === 'outflow' ? 'Expense' : 'Income'}</span>
-                    </>
-                  )}
-                </button>
-              </div>
-              
-              {/* Form Status Indicator */}
-              <div className="mt-3 text-center">
-                {(!formData.account_id || !formData.amount || !formData.description) ? (
-                  <p className="text-sm text-amber-600 font-medium">
-                    ⚠️ Please fill in all required fields to submit
-                  </p>
-                ) : (
-                  <p className="text-sm text-green-600 font-medium">
-                    ✅ Ready to submit • Press Enter or click the button above
-                  </p>
-                )}
-              </div>
-            </div>
+          <div className="sticky bottom-0 left-0 right-0 -mx-4 rounded-t-2xl bg-white border-t border-gray-100 px-4 py-3 mt-6">
+            <button
+              type="submit"
+              className="w-full rounded-2xl bg-blue-600 text-white py-3 text-[15px] font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isSubmitting || !formData.account_id || !formData.amount || !formData.description}
+            >
+              {isSubmitting ? (
+                <div className="flex items-center justify-center gap-2">
+                  <LoadingSpinner size="sm" />
+                  Adding...
+                </div>
+              ) : (
+                `Add ${formData.direction === 'outflow' ? 'Expense' : 'Income'}`
+              )}
+            </button>
+          </div>
           </form>
         )}
+        </div>
       </div>
     </div>
   );

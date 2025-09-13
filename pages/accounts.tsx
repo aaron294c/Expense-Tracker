@@ -1,7 +1,8 @@
 // pages/accounts.tsx - Enhanced with full account management
 import React, { useState } from 'react';
 import { AuthWrapper } from '../components/auth/AuthWrapper';
-import { AppLayout } from '../components/layout/AppLayout';
+import { Screen } from '../components/_layout/Screen';
+import { BottomDock } from '../components/navigation/BottomDock';
 import { Card } from '../components/ui/Card';
 import { useAccounts } from '../hooks/useAccounts';
 import { useHousehold } from '../hooks/useHousehold';
@@ -100,12 +101,12 @@ function AccountsContent() {
   }
 
   return (
-    <div className="p-4 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Accounts</h1>
-          <p className="text-sm text-gray-600 mt-1">{accounts.length} accounts</p>
+          <h1 className="text-[28px] leading-[1.2] font-semibold tracking-[-0.02em] text-gray-900">Accounts</h1>
+          <p className="text-[13px] text-gray-500">{accounts.length} accounts</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -632,11 +633,22 @@ function EditAccountModal({ isOpen, account, onClose, onSuccess }: EditAccountMo
 }
 
 export default function AccountsPage() {
+  const { currentHousehold } = useHousehold();
+  const [showAddTransaction, setShowAddTransaction] = useState(false);
+
+  const handleAddTransaction = () => {
+    setShowAddTransaction(true);
+  };
+
   return (
     <AuthWrapper>
-      <AppLayout title="Accounts">
-        <AccountsContent />
-      </AppLayout>
+      <>
+        <Screen>
+          <AccountsContent />
+        </Screen>
+
+        <BottomDock onAdd={handleAddTransaction} />
+      </>
     </AuthWrapper>
   );
 }

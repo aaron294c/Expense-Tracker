@@ -1,13 +1,17 @@
 // pages/insights.tsx - Enhanced with interactive charts and analytics
 import React, { useState, useMemo, useEffect } from 'react';
-import { AuthWrapper } from '../components/auth/AuthWrapper';
-import { AppLayout } from '../components/layout/AppLayout';
+import { Screen } from '../components/_layout/Screen';
+import { BottomDock } from '../components/navigation/BottomDock';
+import { StatGrid } from '../components/layout/StatGrid';
+import { StatCard } from '../components/mobile/StatCard';
+import { MonthPickerPill } from '../components/ui/MonthPickerPill';
 import { Card } from '../components/ui/Card';
 import { useHousehold } from '../hooks/useHousehold';
 import { useCategorySummary } from '../hooks/useCategorySummary';
 import { useMonth } from '../hooks/useMonth';
 import { formatCurrency, getCurrencyFromHousehold } from '../lib/utils';
 import { authenticatedFetch } from '../lib/api';
+import { AddTransactionModal } from '../components/transactions/AddTransactionModal';
 import { 
   PieChart, 
   Pie, 
@@ -37,8 +41,10 @@ import {
   Activity,
   Zap,
   Target,
-  ShoppingBag
+  ShoppingBag,
+  Settings
 } from 'lucide-react';
+import Link from 'next/link';
 
 const CHART_COLORS = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#F97316', '#06B6D4', '#84CC16'];
 
@@ -209,248 +215,220 @@ function InsightsContent() {
   }
 
   return (
-    <div className="p-4 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Insights</h1>
-          <p className="text-sm text-gray-600 mt-1">Financial analytics and trends</p>
+          <h1 className="text-[28px] leading-[1.2] font-semibold tracking-[-0.02em] text-gray-900">Insights</h1>
+          <p className="text-[13px] text-gray-500">Financial analytics and trends</p>
         </div>
-        
-        {/* Month Navigation */}
-        <div className="flex items-center gap-2">
-          <button onClick={goToPreviousMonth} className="p-2 hover:bg-gray-100 rounded-full">
-            <ChevronLeft size={20} />
-          </button>
-          <span className="font-medium text-gray-900 min-w-[120px] text-center">{monthDisplay}</span>
-          <button onClick={goToNextMonth} className="p-2 hover:bg-gray-100 rounded-full">
-            <ChevronRight size={20} />
-          </button>
+        <Link href="/settings" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <Settings className="w-5 h-5 text-gray-600" />
+        </Link>
+      </div>
+
+      {/* Month Navigation */}
+      <MonthPickerPill
+        label={monthDisplay}
+        onPrev={goToPreviousMonth}
+        onNext={goToNextMonth}
+      />
+
+      {/* Insights Stat Cards - 2-col grid */}
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
+          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600">
+            <DollarSign size={16} />
+          </div>
+          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Total Spent</div>
+          <div className="mt-1 text-[18px] font-semibold tabular-nums text-gray-900">{formatCurrency(totalSpent, currency)}</div>
+          <div className="mt-1 text-[12px] text-gray-500">This month</div>
+        </div>
+        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
+          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600">
+            <Target size={16} />
+          </div>
+          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Budget Used</div>
+          <div className="mt-1 text-[18px] font-semibold tabular-nums text-gray-900">{Math.round(budgetUsed)}%</div>
+          <div className="mt-1 text-[12px] text-gray-500">Monthly budget</div>
+        </div>
+        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
+          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600">
+            <Activity size={16} />
+          </div>
+          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Transactions</div>
+          <div className="mt-1 text-[18px] font-semibold tabular-nums text-gray-900">{transactions.filter(t => t.occurred_at.startsWith(currentMonth)).length}</div>
+          <div className="mt-1 text-[12px] text-gray-500">This month</div>
+        </div>
+        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
+          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600">
+            <Zap size={16} />
+          </div>
+          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Avg. Daily</div>
+          <div className="mt-1 text-[18px] font-semibold tabular-nums text-gray-900">{formatCurrency(totalSpent / new Date().getDate(), currency)}</div>
+          <div className="mt-1 text-[12px] text-gray-500">Per day</div>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <DollarSign className="text-blue-600" size={20} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Total Spent</p>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(totalSpent, currency)}</p>
-            </div>
-          </div>
-        </Card>
-        
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <Target className="text-green-600" size={20} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Budget Used</p>
-              <p className={`text-xl font-bold ${budgetUsed > 100 ? 'text-red-600' : budgetUsed > 80 ? 'text-yellow-600' : 'text-green-600'}`}>
-                {Math.round(budgetUsed)}%
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <Activity className="text-orange-600" size={20} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Transactions</p>
-              <p className="text-xl font-bold text-gray-900">
-                {transactions.filter(t => t.occurred_at.startsWith(currentMonth)).length}
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg">
-              <Zap className="text-purple-600" size={20} />
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Avg. Daily</p>
-              <p className="text-xl font-bold text-gray-900">
-                {formatCurrency(totalSpent / new Date().getDate(), currency)}
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      {/* Chart Selection Tabs */}
-      <div className="flex gap-2 bg-gray-100 rounded-lg p-1">
+      {/* Apple-style Segmented Tabs */}
+      <div className="inline-flex rounded-xl bg-gray-50 p-1 border border-gray-200 mt-4">
         {[
-          { key: 'category', label: 'Categories', icon: PieChartIcon },
-          { key: 'trends', label: 'Trends', icon: Activity },
-          { key: 'merchant', label: 'Merchants', icon: ShoppingBag },
-          { key: 'comparison', label: 'Daily', icon: BarChart3 }
-        ].map(({ key, label, icon: Icon }) => (
+          { key: 'category', label: 'Categories' },
+          { key: 'trends', label: 'Trends' },
+          { key: 'merchant', label: 'Merchants' },
+          { key: 'comparison', label: 'Daily' }
+        ].map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setActiveChart(key as any)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeChart === key
-                ? 'bg-white text-blue-600 shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+            className={`px-3 py-2 rounded-lg text-[14px] transition-all duration-200 ${
+              activeChart === key 
+                ? 'bg-white shadow font-medium text-gray-900' 
+                : 'text-gray-600'
             }`}
           >
-            <Icon size={16} />
             {label}
           </button>
         ))}
       </div>
 
-      {/* Dynamic Chart Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main Chart */}
-        <Card className="lg:col-span-2 p-6">
-          {activeChart === 'category' && (
-            <>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Spending by Category</h3>
-              {categoryData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={categoryData}
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                    >
-                      {categoryData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<CustomPieTooltip />} />
-                  </PieChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-[300px] text-gray-500">
-                  No spending data available
-                </div>
-              )}
-            </>
-          )}
-
-          {activeChart === 'trends' && (
-            <>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">6-Month Trends</h3>
+      {/* Chart Cards - One per row */}
+      <div className="rounded-2xl p-4 bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] mt-4">
+        {activeChart === 'category' && (
+          <>
+            <h3 className="text-[16px] font-semibold text-gray-900 mb-4">Spending by Category</h3>
+            {categoryData.length > 0 ? (
               <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={trendsData}>
+                <PieChart>
+                  <Pie
+                    data={categoryData}
+                    cx="50%"
+                    cy="50%"
+                    outerRadius={100}
+                    fill="#8884d8"
+                    dataKey="value"
+                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  >
+                    {categoryData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip content={<CustomPieTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-[13px] text-gray-500 text-center py-8">
+                No spending data available
+              </div>
+            )}
+          </>
+        )}
+
+        {activeChart === 'trends' && (
+          <>
+            <h3 className="text-[16px] font-semibold text-gray-900 mb-4">6-Month Trends</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={trendsData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="month" />
+                <YAxis tickFormatter={(value) => `$${value}`} />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Area type="monotone" dataKey="spending" stackId="1" stroke="#EF4444" fill="#FEE2E2" name="Spending" />
+                <Area type="monotone" dataKey="income" stackId="2" stroke="#10B981" fill="#DCFCE7" name="Income" />
+              </AreaChart>
+            </ResponsiveContainer>
+          </>
+        )}
+
+        {activeChart === 'merchant' && (
+          <>
+            <h3 className="text-[16px] font-semibold text-gray-900 mb-4">Top Merchants</h3>
+            {merchantData.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <BarChart data={merchantData} layout="horizontal">
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
+                  <XAxis type="number" tickFormatter={(value) => `$${value}`} />
+                  <YAxis dataKey="merchant" type="category" width={100} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Bar dataKey="amount" fill="#3B82F6" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-[13px] text-gray-500 text-center py-8">
+                No merchant data available
+              </div>
+            )}
+          </>
+        )}
+
+        {activeChart === 'comparison' && (
+          <>
+            <h3 className="text-[16px] font-semibold text-gray-900 mb-4">Daily Spending Pattern</h3>
+            {dailySpending.length > 0 ? (
+              <ResponsiveContainer width="100%" height={300}>
+                <LineChart data={dailySpending}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="day" />
                   <YAxis tickFormatter={(value) => `$${value}`} />
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend />
-                  <Area type="monotone" dataKey="spending" stackId="1" stroke="#EF4444" fill="#FEE2E2" name="Spending" />
-                  <Area type="monotone" dataKey="income" stackId="2" stroke="#10B981" fill="#DCFCE7" name="Income" />
-                </AreaChart>
+                  <Line type="monotone" dataKey="amount" stroke="#8B5CF6" strokeWidth={2} dot={{ fill: '#8B5CF6' }} />
+                </LineChart>
               </ResponsiveContainer>
-            </>
-          )}
+            ) : (
+              <div className="text-[13px] text-gray-500 text-center py-8">
+                No daily spending data available
+              </div>
+            )}
+          </>
+        )}
+      </div>
 
-          {activeChart === 'merchant' && (
-            <>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Merchants</h3>
-              {merchantData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={merchantData} layout="horizontal">
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis type="number" tickFormatter={(value) => `$${value}`} />
-                    <YAxis dataKey="merchant" type="category" width={100} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Bar dataKey="amount" fill="#3B82F6" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-[300px] text-gray-500">
-                  No merchant data available
-                </div>
-              )}
-            </>
-          )}
-
-          {activeChart === 'comparison' && (
-            <>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Daily Spending Pattern</h3>
-              {dailySpending.length > 0 ? (
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={dailySpending}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="day" />
-                    <YAxis tickFormatter={(value) => `$${value}`} />
-                    <Tooltip content={<CustomTooltip />} />
-                    <Line type="monotone" dataKey="amount" stroke="#8B5CF6" strokeWidth={2} dot={{ fill: '#8B5CF6' }} />
-                  </LineChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="flex items-center justify-center h-[300px] text-gray-500">
-                  No daily spending data available
-                </div>
-              )}
-            </>
-          )}
-        </Card>
-
-        {/* Side Panel - Category Breakdown */}
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Category Details</h3>
-          {categoryData.length > 0 ? (
-            <div className="space-y-4 max-h-[300px] overflow-y-auto">
-              {categoryData.map((category, index) => (
-                <div key={category.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="w-4 h-4 rounded-full" 
-                      style={{ backgroundColor: category.color }}
-                    />
-                    <div>
-                      <div className="flex items-center gap-1">
-                        <span className="text-sm">{category.icon}</span>
-                        <span className="font-medium text-sm">{category.name}</span>
-                      </div>
-                      {category.budget > 0 && (
-                        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                          <div
-                            className="bg-blue-600 h-1.5 rounded-full"
-                            style={{ width: `${Math.min((category.value / category.budget) * 100, 100)}%` }}
-                          />
-                        </div>
-                      )}
+      {/* Category Details below the chart */}
+      {activeChart === 'category' && categoryData.length > 0 && (
+        <div className="rounded-2xl p-4 bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
+          <h3 className="text-[16px] font-semibold text-gray-900 mb-4">Category Details</h3>
+          <div className="space-y-4">
+            {categoryData.map((category, index) => (
+              <div key={category.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div
+                    className="w-4 h-4 rounded-full"
+                    style={{ backgroundColor: category.color }}
+                  />
+                  <div>
+                    <div className="flex items-center gap-1">
+                      <span className="text-sm">{category.icon}</span>
+                      <span className="font-medium text-sm">{category.name}</span>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-sm">{formatCurrency(category.value, currency)}</p>
                     {category.budget > 0 && (
-                      <p className="text-xs text-gray-500">
-                        {Math.round((category.value / category.budget) * 100)}%
-                      </p>
+                      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+                        <div
+                          className="bg-blue-600 h-1.5 rounded-full"
+                          style={{ width: `${Math.min((category.value / category.budget) * 100, 100)}%` }}
+                        />
+                      </div>
                     )}
                   </div>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 text-center py-8">No category data available</p>
-          )}
-        </Card>
-      </div>
+                <div className="text-right">
+                  <p className="font-semibold text-sm">{formatCurrency(category.value, currency)}</p>
+                  {category.budget > 0 && (
+                    <p className="text-xs text-gray-500">
+                      {Math.round((category.value / category.budget) * 100)}%
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Budget Progress */}
       {totalBudget > 0 && (
-        <Card className="p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Budget Progress</h3>
+        <div className="rounded-2xl p-4 bg-white border border-gray-100 shadow mt-4">
+          <h3 className="text-[16px] font-semibold text-gray-900 mb-2">Budget Progress</h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <span className="text-gray-700">Monthly Budget</span>
@@ -476,18 +454,36 @@ function InsightsContent() {
               </span>
             </div>
           </div>
-        </Card>
+        </div>
       )}
     </div>
   );
 }
 
 export default function InsightsPage() {
+  const { currentHousehold } = useHousehold();
+  const [showAddTransaction, setShowAddTransaction] = useState(false);
+  
+  const handleAddTransaction = () => {
+    setShowAddTransaction(true);
+  };
+
   return (
-    <AuthWrapper>
-      <AppLayout title="Insights">
+    <>
+      <Screen>
         <InsightsContent />
-      </AppLayout>
-    </AuthWrapper>
+      </Screen>
+
+      <BottomDock onAdd={handleAddTransaction} />
+      
+      {currentHousehold && (
+        <AddTransactionModal
+          isOpen={showAddTransaction}
+          onClose={() => setShowAddTransaction(false)}
+          householdId={currentHousehold.id}
+          onSuccess={() => setShowAddTransaction(false)}
+        />
+      )}
+    </>
   );
 }

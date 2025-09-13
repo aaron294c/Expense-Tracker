@@ -1,10 +1,9 @@
 // components/features/transactions/TransactionList.tsx
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/Card';
-import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
-import { EmptyState } from '@/components/ui/EmptyState';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { useTransactions } from '@/hooks/useTransactions';
+import { Card, CardContent } from '../../../src/components/ui/Card';
+import { LoadingSpinner } from '../../common/LoadingSpinner';
+import { EmptyState } from '../../ui/EmptyState';
+import { useTransactions } from '../../../hooks/useTransactions';
 import { PlusIcon, FilterIcon } from 'lucide-react';
 
 interface TransactionListProps {
@@ -118,7 +117,7 @@ export function TransactionList({ householdId, limit, showFilters = false }: Tra
   );
 }
 
-function TransactionItem({ transaction }) {
+function TransactionItem({ transaction }: { transaction: any }) {
   const amount = transaction.direction === 'outflow' ? -transaction.amount : transaction.amount;
   const formattedAmount = new Intl.NumberFormat('en-US', {
     style: 'currency',
@@ -178,15 +177,15 @@ function TransactionItem({ transaction }) {
 
 function TransactionSkeleton() {
   return (
-    <div className="flex items-center gap-4 py-4">
-      <Skeleton variant="circular" width={48} height={48} />
+    <div className="flex items-center gap-4 py-4 animate-pulse">
+      <div className="w-12 h-12 bg-border/subtle rounded-full" />
       <div className="flex-1 space-y-2">
-        <Skeleton variant="text" width="60%" />
-        <Skeleton variant="text" width="40%" />
+        <div className="h-4 bg-border/subtle rounded w-3/5" />
+        <div className="h-3 bg-border/subtle rounded w-2/5" />
       </div>
       <div className="text-right space-y-2">
-        <Skeleton variant="text" width={80} />
-        <Skeleton variant="text" width={60} />
+        <div className="h-4 bg-border/subtle rounded w-20" />
+        <div className="h-3 bg-border/subtle rounded w-16" />
       </div>
     </div>
   );

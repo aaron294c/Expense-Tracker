@@ -1,10 +1,15 @@
 // pages/budgets.tsx - Full budget allocation and tracking system
 import React, { useState, useEffect } from 'react';
-import { AuthWrapper } from '../components/auth/AuthWrapper';
-import { AppLayout } from '../components/layout/AppLayout';
+import { Screen } from '../components/_layout/Screen';
+import { BottomDock } from '../components/navigation/BottomDock';
+import { StatGrid } from '../components/layout/StatGrid';
+import { StatCard } from '../components/mobile/StatCard';
+import { OpaqueModal } from '../components/ui/OpaqueModal';
 import { Card } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { MonthPickerPill } from '../components/ui/MonthPickerPill';
 import { useHousehold } from '../hooks/useHousehold';
+import { AddTransactionModal } from '../components/transactions/AddTransactionModal';
 import { supabase } from '@/lib/supabaseBrowser';
 import { authenticatedFetch } from '../lib/api';
 import { useBudgetData } from '../hooks/useBudgetData';
@@ -24,6 +29,7 @@ import {
   Settings,
   PieChart
 } from 'lucide-react';
+import Link from 'next/link';
 import { formatCurrency, getCurrencyFromHousehold } from '../lib/utils';
 
 interface Category {
@@ -82,79 +88,53 @@ function BudgetProgress({ item, currency }: { item: BudgetItem; currency: string
   }
 
   return (
-    <div className="card-premium p-6 hover-lift animate-slide-up border border-gray-100">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-4">
-          <div 
-            className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-2xl shadow-lg animate-float" 
-            style={{ backgroundColor: item.color || '#6B7280' }}
-          >
+    <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="size-10 rounded-xl bg-gray-50 grid place-items-center">
             {item.icon || '📊'}
           </div>
           <div>
-            <h3 className="text-heading mb-2">{item.category_name}</h3>
-            <div className="flex items-center gap-3">
-              <div className={`w-3 h-3 rounded-full ${
-                isOverBudget ? 'bg-red-400' : isNearLimit ? 'bg-yellow-400' : 'bg-green-400'
-              } animate-pulse shadow-lg`}></div>
-              <span className={`px-3 py-2 rounded-full text-sm font-bold ${
-                isOverBudget ? 'bg-red-100 text-red-700 shadow-red-200' : 
-                isNearLimit ? 'bg-yellow-100 text-yellow-700 shadow-yellow-200' : 
-                'bg-green-100 text-green-700 shadow-green-200'
-              } shadow-md`}>
-                {isOverBudget ? '🚨 Over Budget' : isNearLimit ? '⚠️ Near Limit' : '✅ On Track'}
-              </span>
-            </div>
+            <h3 className="text-[16px] font-semibold text-gray-900 truncate">{item.category_name}</h3>
+            <p className="text-[12px] text-gray-500 truncate">
+              of ${(item.budget || 0).toFixed(0)} budgeted
+            </p>
           </div>
         </div>
-        
-        <div className="text-right">
-          <div className={`text-4xl font-bold mb-2 ${
-            isOverBudget ? 'text-red-600' : isNearLimit ? 'text-yellow-600' : 'text-gray-900'
-          }`}>
-            ${(item.spent || 0).toFixed(0)}
-          </div>
-          <div className="text-caption text-gray-500 mb-3">
-            of ${(item.budget || 0).toFixed(0)} budgeted
-          </div>
-          <div className={`px-3 py-2 rounded-lg text-sm font-bold ${
-            item.remaining >= 0 
-              ? 'bg-green-50 text-green-700 border border-green-200' 
-              : 'bg-red-50 text-red-700 border border-red-200'
-          }`}>
-            ${Math.abs(item.remaining || 0).toFixed(0)} {item.remaining >= 0 ? 'remaining' : 'over budget'}
+        <div className="min-w-[96px] text-right">
+          <div className="text-[22px] font-semibold tabular-nums">
+            <span className="text-[14px] text-gray-500 align-top mr-0.5">$</span>
+            <span className={
+              isOverBudget ? 'text-rose-600' : isNearLimit ? 'text-amber-600' : 'text-gray-900'
+            }>
+              {(item.spent || 0).toFixed(0)}
+            </span>
           </div>
         </div>
       </div>
-      
-      {/* Clean Progress Bar */}
-      <div className="space-y-3">
-        <div className="flex justify-between items-center">
-          <span className="text-sm font-medium text-gray-700">
-            {item.category_name} Progress
-          </span>
-          <span className={`px-2 py-1 rounded text-sm font-bold ${
-            isOverBudget ? 'bg-red-600 text-white' : 
-            isNearLimit ? 'bg-yellow-600 text-white' : 
-            'bg-green-600 text-white'
-          }`}>
-            {percentage.toFixed(0)}%
-          </span>
+
+      <div className="mt-3 flex items-center gap-2">
+        <div className={`w-2 h-2 rounded-full ${
+          isOverBudget ? 'bg-rose-500' : isNearLimit ? 'bg-amber-500' : 'bg-emerald-500'
+        }`}></div>
+        <span className={`text-[12px] font-medium ${
+          isOverBudget ? 'text-rose-700' : isNearLimit ? 'text-amber-700' : 'text-emerald-700'
+        }`}>
+          {isOverBudget ? 'Over Budget' : isNearLimit ? 'Near Limit' : 'On Track'}
+        </span>
+      </div>
+
+      <div className="mt-3">
+        <div className="h-2 rounded-full bg-gray-200">
+          <div
+            className={`h-2 rounded-full ${
+              isOverBudget ? 'bg-rose-500' : isNearLimit ? 'bg-amber-500' : 'bg-emerald-500'
+            }`}
+            style={{ width: `${Math.min(percentage, 100)}%` }}
+          />
         </div>
-        
-        <div className="relative">
-          <div className="w-full bg-gray-200/50 rounded-full h-4 overflow-hidden shadow-inner">
-            <div 
-              className={`h-full rounded-full transition-all duration-700 ease-out relative overflow-hidden ${
-                isOverBudget ? 'bg-gradient-to-r from-red-400 to-red-600' :
-                isNearLimit ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' :
-                'bg-gradient-to-r from-green-400 to-green-600'
-              }`}
-              style={{ width: `${Math.min(percentage, 100)}%` }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"></div>
-            </div>
-          </div>
+        <div className="mt-1 text-[12px] text-gray-500">
+          {percentage.toFixed(0)}% used • ${Math.abs(item.remaining || 0).toFixed(0)} {item.remaining >= 0 ? 'remaining' : 'over'}
         </div>
       </div>
     </div>
@@ -211,21 +191,27 @@ function BudgetAllocator({
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="card-premium p-6 text-center">
-          <div className="text-2xl mb-2">🎯</div>
-          <p className="text-caption font-medium mb-1">Total Allocated</p>
-          <p className="value-large text-2xl text-blue-600">${totalAllocated.toFixed(2)}</p>
-        </div>
-        <div className="card-premium p-6 text-center">
-          <div className="text-2xl mb-2">{remainingBudget >= 0 ? '💰' : '⚠️'}</div>
-          <p className="text-caption font-medium mb-1">Remaining</p>
-          <p className={`value-large text-2xl ${
-            remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'
-          }`}>${Math.abs(remainingBudget).toFixed(2)}</p>
-        </div>
-      </div>
+      {/* Summary KPI Cards */}
+      <StatGrid>
+        <StatCard
+          icon={<span className="text-xl">🎯</span>}
+          label="Total Allocated"
+          value={`$${totalAllocated.toFixed(2)}`}
+          sub="Monthly budget"
+        />
+        <StatCard
+          icon={<span className="text-xl">{remainingBudget >= 0 ? '💰' : '⚠️'}</span>}
+          label="Remaining"
+          value={`$${Math.abs(remainingBudget).toFixed(2)}`}
+          sub="This month"
+        />
+        <StatCard
+          icon={<TrendingDown size={20} />}
+          label="Total Spent"
+          value={`$${totalSpent.toFixed(2)}`}
+          sub="Categories"
+        />
+      </StatGrid>
 
       {/* Success Message */}
       {successMessage && (
@@ -237,7 +223,7 @@ function BudgetAllocator({
       {/* Category Budget Cards */}
       <div className="card-premium p-8">
         <div className="mb-6">
-          <h2 className="text-heading mb-2">Set Budget Limits</h2>
+          <h2 className="text-section-title mb-2">Set Budget Limits</h2>
           <p className="text-body">Allocate monthly spending limits for each category</p>
         </div>
 
@@ -248,55 +234,82 @@ function BudgetAllocator({
             const categoryColor = category.color || '#6B7280';
             
             return (
-              <div key={category.id} className="group bg-gradient-to-br from-gray-50 to-blue-50/20 rounded-2xl p-6 hover:shadow-lg transition-all duration-300 hover:scale-[1.01] border border-gray-100">
-                <div className="flex items-start gap-4 mb-4">
-                  <div 
-                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl shadow-lg group-hover:scale-110 transition-transform duration-300" 
-                    style={{ backgroundColor: categoryColor }}
-                  >
-                    {category.icon || '📊'}
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 mb-1">{category.name}</h3>
-                    {spent > 0 && (
-                      <p className="text-sm text-gray-500">
-                        Spent ${spent.toFixed(2)} this month
-                      </p>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="relative">
-                  <div className="absolute left-4 top-4 text-gray-400 font-medium text-lg">$</div>
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    value={budgetAmounts[category.id] || ''}
-                    onChange={(e) => setBudgetAmounts(prev => ({ 
-                      ...prev, 
-                      [category.id]: e.target.value 
-                    }))}
-                    className="w-full pl-8 pr-4 py-4 bg-white/80 backdrop-blur-sm border border-gray-200/50 rounded-xl focus:outline-none focus:ring-3 focus:ring-blue-500/30 focus:border-blue-400 transition-all duration-200 placeholder-gray-400 text-lg font-medium"
-                    placeholder="Enter budget amount"
-                  />
-                </div>
-                
-                {/* Mini Progress Preview */}
-                {budgetAmounts[category.id] && parseFloat(budgetAmounts[category.id]) > 0 && spent > 0 && (
-                  <div className="mt-4">
-                    <div className="flex justify-between text-sm text-gray-600 mb-1">
-                      <span>Progress</span>
-                      <span>{((spent / parseFloat(budgetAmounts[category.id])) * 100).toFixed(0)}%</span>
+              <div key={category.id} className="card-unified motion-card-mount">
+                {/* Top row: icon + title/label + amount */}
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="size-10 rounded-xl bg-gray-50 grid place-items-center">
+                      {category.icon || '📊'}
                     </div>
-                    <div className="w-full bg-gray-200/50 rounded-full h-2">
-                      <div 
-                        className="h-2 rounded-full bg-gradient-to-r from-blue-400 to-blue-600 transition-all duration-500"
+                    <div className="flex flex-col">
+                      <h3 className="card-title">{category.name}</h3>
+                      <p className="card-subtitle">
+                        {spent > 0 ? `Spent this month` : 'No spending yet'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="card-amount">
+                    <span className="currency-symbol">$</span>
+                    {spent.toFixed(2)}
+                  </div>
+                </div>
+                
+                
+                {/* Middle row: chips */}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {budgetAmounts[category.id] && parseFloat(budgetAmounts[category.id]) > 0 ? (
+                    <>
+                      {spent > parseFloat(budgetAmounts[category.id]) ? (
+                        <span className="status-chip-danger">Over Budget</span>
+                      ) : (
+                        <span className="status-chip-success">On Track</span>
+                      )}
+                      {spent > parseFloat(budgetAmounts[category.id]) && (
+                        <span className="status-chip-danger">
+                          ${(spent - parseFloat(budgetAmounts[category.id])).toFixed(2)} over
+                        </span>
+                      )}
+                    </>
+                  ) : (
+                    <span className="status-chip-warning">No Budget Set</span>
+                  )}
+                </div>
+
+                {/* Input Section */}
+                <div className="mt-3">
+                  <div className="relative">
+                    <div className="absolute left-4 top-4 text-gray-400 font-medium text-lg">$</div>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={budgetAmounts[category.id] || ''}
+                      onChange={(e) => setBudgetAmounts(prev => ({ 
+                        ...prev, 
+                        [category.id]: e.target.value 
+                      }))}
+                      className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 pl-8 text-[15px] placeholder:text-gray-400 focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-200"
+                      placeholder="Enter budget amount"
+                    />
+                  </div>
+                </div>
+                
+                {/* Bottom row: progress bar + label */}
+                {budgetAmounts[category.id] && parseFloat(budgetAmounts[category.id]) > 0 && (
+                  <div className="mt-4">
+                    <div className="h-2 w-full rounded-full bg-gray-200">
+                      <div
+                        className={`h-2 rounded-full ${
+                          spent > parseFloat(budgetAmounts[category.id]) ? 'bg-rose-500' : 'bg-emerald-500'
+                        }`}
                         style={{ 
                           width: `${Math.min((spent / parseFloat(budgetAmounts[category.id])) * 100, 100)}%` 
                         }}
                       />
                     </div>
+                    <p className="progress-label mt-1">
+                      {Math.round((spent / parseFloat(budgetAmounts[category.id])) * 100)}% of budget used
+                    </p>
                   </div>
                 )}
               </div>
@@ -478,69 +491,28 @@ function BudgetsContent() {
 
   return (
     <div className="space-y-6">
-      {/* Header with Month Navigation */}
-      {/* Clean Header */}
-      <div className="card-glass p-6 mb-8 animate-fade-in">
-        <div className="flex items-center justify-between">
-          {/* Left: Title */}
-          <div className="flex items-center gap-4">
-            <div className="text-4xl animate-float">💰</div>
-            <div>
-              <h1 className="text-display">Budget Tracker</h1>
-              <p className="text-body text-gray-600">Track your monthly spending goals</p>
-            </div>
-          </div>
-          
-          {/* Right: Month Navigation + Action */}
-          <div className="flex items-center gap-3">
-            {/* Month Selector */}
-            <div className="flex items-center bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-200/50 shadow-sm">
-              <button
-                onClick={() => navigateMonth('prev')}
-                className="p-3 hover:bg-blue-50 rounded-l-2xl transition-all duration-200 group"
-                title="Previous Month"
-              >
-                <ArrowLeft size={20} className="text-blue-600 group-hover:scale-110 transition-transform" />
-              </button>
-              <div className="px-6 py-3 flex items-center gap-2 border-x border-gray-200/50">
-                <Calendar size={18} className="text-blue-600" />
-                <span className="font-semibold text-gray-900 min-w-[140px] text-center">
-                  {getMonthName(currentMonth)}
-                </span>
-              </div>
-              <button
-                onClick={() => navigateMonth('next')}
-                className="p-3 hover:bg-blue-50 rounded-r-2xl transition-all duration-200 group"
-                title="Next Month"
-              >
-                <ArrowRight size={20} className="text-blue-600 group-hover:scale-110 transition-transform" />
-              </button>
-            </div>
-            
-            {/* Toggle Budget Setter */}
-            <button
-              onClick={() => setShowAllocator(!showAllocator)}
-              className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-300 flex items-center gap-2 shadow-lg ${
-                showAllocator 
-                  ? 'bg-gradient-to-r from-gray-500 to-gray-600 text-white hover:from-gray-600 hover:to-gray-700 shadow-gray-500/25' 
-                  : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 shadow-blue-500/25'
-              } hover:scale-105 active:scale-95`}
-            >
-              {showAllocator ? (
-                <>
-                  <X size={18} />
-                  <span>Cancel</span>
-                </>
-              ) : (
-                <>
-                  <Settings size={18} />
-                  <span>Set Budgets</span>
-                </>
-              )}
-            </button>
-          </div>
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-[28px] leading-[1.2] font-semibold tracking-[-0.02em] text-gray-900">Budgets</h1>
+          <p className="text-[13px] text-gray-500">Track your monthly spending goals</p>
         </div>
+        <button
+          type="button"
+          onClick={() => setShowAllocator(!showAllocator)}
+          className="inline-flex items-center gap-2 rounded-full bg-[#2563eb] text-white px-4 py-2 shadow hover:bg-[#1e4fd1] active:scale-95 transition"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" className="opacity-90"><path fill="currentColor" d="M19 13H5v-2h14v2Z"/></svg>
+          <span className="text-[14px] font-medium">Set Budgets</span>
+        </button>
       </div>
+
+      {/* Month Navigation */}
+      <MonthPickerPill
+        label={getMonthName(currentMonth)}
+        onPrev={() => navigateMonth('prev')}
+        onNext={() => navigateMonth('next')}
+      />
 
       {/* Budget Allocator */}
       {showAllocator && (
@@ -552,89 +524,50 @@ function BudgetsContent() {
         />
       )}
 
-      {/* Overview Cards */}
-      {/* (unchanged UI below) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="card-premium p-8 hover-glow animate-scale-in">
-          <div className="flex items-center gap-6">
-            <div className="p-4 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl shadow-lg shadow-blue-500/25">
-              <Target className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <p className="text-caption font-medium mb-2">Total Budget</p>
-              <p className="value-large text-3xl text-blue-600">
-                {formatCurrency(totalBudget, currency)}
-              </p>
-            </div>
+      {/* Overview Cards - 2-col grid */}
+      <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
+          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600">
+            <Target size={16} />
           </div>
+          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Total Budget</div>
+          <div className="mt-1 text-[18px] font-semibold tabular-nums text-gray-900">{formatCurrency(totalBudget, currency)}</div>
         </div>
-
-        <div className="card-premium p-8 hover-glow animate-scale-in" style={{animationDelay: '0.1s'}}>
-          <div className="flex items-center gap-6">
-            <div className={`p-4 rounded-2xl shadow-lg ${
-              overallPercentage > 100 
-                ? 'bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/25' 
-                : 'bg-gradient-to-br from-green-500 to-green-600 shadow-green-500/25'
-            }`}>
-              <TrendingDown className="h-8 w-8 text-white" />
-            </div>
-            <div>
-              <p className="text-caption font-medium mb-2">Total Spent</p>
-              <p className={`value-large text-3xl ${
-                overallPercentage > 100 ? 'text-red-600' : 'text-green-600'
-              }`}>
-                {formatCurrency(totalSpent, currency)}
-              </p>
-              <p className="text-caption text-gray-500 font-medium">
-                {overallPercentage.toFixed(1)}% of budget
-              </p>
-            </div>
+        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
+          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600">
+            <TrendingDown size={16} />
           </div>
+          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Total Spent</div>
+          <div className="mt-1 text-[18px] font-semibold tabular-nums text-gray-900">{formatCurrency(totalSpent, currency)}</div>
+          <div className="mt-1 text-[12px] text-gray-500">{overallPercentage.toFixed(1)}% of budget</div>
         </div>
-
-        <div className="card-premium p-8 hover-glow animate-scale-in" style={{animationDelay: '0.2s'}}>
-          <div className="flex items-center gap-6">
-            <div className={`p-4 rounded-2xl shadow-lg ${
-              totalRemaining < 0 
-                ? 'bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/25'
-                : 'bg-gradient-to-br from-green-500 to-green-600 shadow-green-500/25'
-            }`}>
-              {totalRemaining < 0 ? (
-                <AlertTriangle className="h-8 w-8 text-white" />
-              ) : (
-                <CheckCircle className="h-8 w-8 text-white" />
-              )}
-            </div>
-            <div>
-              <p className="text-caption font-medium mb-2">
-                {totalRemaining < 0 ? 'Over Budget' : 'Remaining'}
-              </p>
-              <p className={`value-large text-3xl ${
-                totalRemaining < 0 ? 'text-red-600' : 'text-green-600'
-              }`}>
-                {formatCurrency(Math.abs(totalRemaining), currency)}
-              </p>
-            </div>
+      </div>
+      <div className="grid grid-cols-1 gap-3 mt-3">
+        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4 text-center">
+          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600 mx-auto">
+            {totalRemaining < 0 ? <AlertTriangle size={16} /> : <CheckCircle size={16} />}
           </div>
+          <div className="mt-2 text-[12.5px] text-gray-500 truncate">{totalRemaining < 0 ? 'Over Budget' : 'Remaining'}</div>
+          <div className="mt-1 text-[18px] font-semibold tabular-nums text-gray-900">{formatCurrency(Math.abs(totalRemaining), currency)}</div>
         </div>
       </div>
 
       {/* Category Progress */}
       <div>
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900">📊 Budget Progress</h2>
-          <div className="flex items-center gap-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-green-400"></div>
-              <span className="text-gray-600">On Track</span>
+          <h2 className="text-[18px] font-semibold text-gray-900">Budget Progress</h2>
+          <div className="flex gap-2 flex-wrap">
+            <div className="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[12px] bg-emerald-50 text-emerald-700">
+              <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+              On Track
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-              <span className="text-gray-600">Near Limit</span>
+            <div className="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[12px] bg-amber-50 text-amber-700">
+              <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+              Near Limit
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-400"></div>
-              <span className="text-gray-600">Over Budget</span>
+            <div className="inline-flex items-center gap-2 rounded-full px-2.5 py-1 text-[12px] bg-rose-50 text-rose-700">
+              <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+              Over Budget
             </div>
           </div>
         </div>
@@ -683,76 +616,41 @@ function BudgetsContent() {
         )}
       </div>
 
-      {/* Enhanced Quick Actions */}
-      <div className="card-premium p-8">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="text-2xl">⚡</div>
-          <h3 className="text-heading">Quick Actions</h3>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <a
-            href="/transactions/add"
-            className="group bg-gradient-to-br from-red-500 to-red-600 text-white p-6 rounded-2xl hover:shadow-xl hover:shadow-red-500/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <Plus size={24} />
-              </div>
-              <div>
-                <div className="font-semibold">Add Expense</div>
-                <div className="text-red-100 text-sm opacity-90">Record spending</div>
-              </div>
-            </div>
-          </a>
-          
-          <a
-            href="/transactions"
-            className="group bg-gradient-to-br from-gray-600 to-gray-700 text-white p-6 rounded-2xl hover:shadow-xl hover:shadow-gray-500/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <TrendingDown size={24} />
-              </div>
-              <div>
-                <div className="font-semibold">Transactions</div>
-                <div className="text-gray-100 text-sm opacity-90">View history</div>
-              </div>
-            </div>
-          </a>
-          
-          <button
-            onClick={fetchBudgets}
-            className="group bg-gradient-to-br from-green-600 to-green-700 text-white p-6 rounded-2xl hover:shadow-xl hover:shadow-green-500/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
-                <CheckCircle size={24} />
-              </div>
-              <div>
-                <div className="font-semibold">Refresh</div>
-                <div className="text-green-100 text-sm opacity-90">Update data</div>
-              </div>
-            </div>
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
 
 
 function BudgetsPage() {
+  const { currentHousehold } = useHousehold();
+  const [showAddTransaction, setShowAddTransaction] = useState(false);
+  
+  const handleAddTransaction = () => {
+    setShowAddTransaction(true);
+  };
+
   return (
-    <AppLayout>
-      <BudgetsContent />
-    </AppLayout>
+    <>
+      <Screen>
+        <BudgetsContent />
+      </Screen>
+
+      <BottomDock onAdd={handleAddTransaction} />
+      
+      {currentHousehold && (
+        <AddTransactionModal
+          isOpen={showAddTransaction}
+          onClose={() => setShowAddTransaction(false)}
+          householdId={currentHousehold.id}
+          onSuccess={() => setShowAddTransaction(false)}
+        />
+      )}
+    </>
   );
 }
 
 export default function BudgetsPageWrapper() {
   return (
-    <AuthWrapper>
-      <BudgetsPage />
-    </AuthWrapper>
+    <BudgetsPage />
   );
 }

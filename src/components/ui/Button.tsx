@@ -1,12 +1,15 @@
 import React from 'react';
 import clsx from 'clsx';
+import { motion } from 'framer-motion';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'destructive';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   children: React.ReactNode;
 }
+
+const MotionButton = motion.button;
 
 export function Button({ 
   variant = 'primary', 
@@ -18,22 +21,26 @@ export function Button({
   ...props 
 }: ButtonProps) {
   return (
-    <button
+    <MotionButton
       className={clsx(
-        'inline-flex items-center justify-center rounded-full font-semibold transition-all duration-200',
-        'focus:outline-none focus:ring-2 focus:ring-offset-2',
-        'active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed',
+        'inline-flex items-center justify-center rounded-2xl font-semibold transition-all duration-200 ease-subtle',
+        'focus:outline-none focus:ring-4 focus:ring-offset-0 min-h-[44px] min-w-[44px]',
+        'disabled:opacity-50 disabled:cursor-not-allowed',
         {
-          'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500': variant === 'primary',
-          'bg-gray-100 text-gray-900 hover:bg-gray-200 focus:ring-gray-500': variant === 'secondary',
-          'bg-transparent text-gray-600 hover:bg-gray-100 focus:ring-gray-500': variant === 'ghost',
-          'px-3 py-1.5 text-sm': size === 'sm',
-          'px-4 py-2 text-base': size === 'md',
-          'px-6 py-3 text-lg': size === 'lg',
+          'bg-brand text-text-inverted shadow-ring hover:shadow-glow focus:ring-brand/20': variant === 'primary',
+          'bg-surface/elevated text-text-primary border border-border/subtle shadow-soft hover:bg-surface focus:ring-border/strong': variant === 'secondary',
+          'bg-transparent text-text-secondary hover:bg-brand/5 focus:ring-brand/10': variant === 'ghost',
+          'bg-red-500 text-text-inverted shadow-ring hover:bg-red-600 focus:ring-red-500/20': variant === 'destructive',
+          'px-3 py-2 text-sm h-9': size === 'sm',
+          'px-4 py-3 text-sm h-11': size === 'md',
+          'px-6 py-4 text-base h-14': size === 'lg',
         },
         className
       )}
       disabled={disabled || loading}
+      whileTap={{ scale: 0.98 }}
+      whileHover={{ scale: 1.02 }}
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
       {...props}
     >
       {loading && (
@@ -43,6 +50,6 @@ export function Button({
         </svg>
       )}
       {children}
-    </button>
+    </MotionButton>
   );
 }

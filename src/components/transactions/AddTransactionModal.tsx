@@ -70,7 +70,9 @@ export function AddTransactionModal({ isOpen, onClose }: AddTransactionModalProp
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Add Transaction" maxWidth="lg">
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="modal-sheet">
+        <div className="modal-handle"></div>
+        <form onSubmit={handleSubmit} className="modal-content space-y-4">
         {/* Amount Input */}
         <div className="text-center">
           <div className="relative flex items-center justify-center mb-4">
@@ -104,10 +106,11 @@ export function AddTransactionModal({ isOpen, onClose }: AddTransactionModalProp
 
         {/* Description */}
         <div className="relative">
-          <Input
+          <input
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Description (e.g., Starbucks coffee)"
+            className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-[15px] placeholder:text-gray-400 focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-200"
             required
           />
           <button
@@ -118,35 +121,33 @@ export function AddTransactionModal({ isOpen, onClose }: AddTransactionModalProp
           </button>
         </div>
 
-        {/* Income/Expense Toggle */}
-        <div className="flex rounded-lg bg-gray-100 p-1">
-          <button
-            type="button"
-            onClick={() => setDirection('outflow')}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              direction === 'outflow'
-                ? 'bg-white text-red-600 shadow-sm'
-                : 'text-gray-500'
-            }`}
-          >
-            Expense
-          </button>
-          <button
-            type="button"
-            onClick={() => setDirection('inflow')}
-            className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
-              direction === 'inflow'
-                ? 'bg-white text-green-600 shadow-sm'
-                : 'text-gray-500'
-            }`}
-          >
-            Income
-          </button>
+        {/* Income/Expense Segmented Control */}
+        <div className="flex justify-center">
+          <div className="segmented-control">
+            <button
+              type="button"
+              onClick={() => setDirection('outflow')}
+              className={`segmented-option motion-tap ${
+                direction === 'outflow' ? 'active' : ''
+              }`}
+            >
+              Expense
+            </button>
+            <button
+              type="button"
+              onClick={() => setDirection('inflow')}
+              className={`segmented-option motion-tap ${
+                direction === 'inflow' ? 'active' : ''
+              }`}
+            >
+              Income
+            </button>
+          </div>
         </div>
 
         {/* Categories */}
         <div>
-          <h3 className="text-base font-semibold text-gray-500 uppercase tracking-wide mb-4">
+          <h3 className="text-label font-medium uppercase tracking-wide mb-4">
             Categories
           </h3>
           <div className="grid grid-cols-3 gap-3">
@@ -155,30 +156,33 @@ export function AddTransactionModal({ isOpen, onClose }: AddTransactionModalProp
                 key={category.id}
                 type="button"
                 onClick={() => setSelectedCategory(category.id)}
-                className={`flex flex-col items-center justify-center gap-2 h-20 rounded-2xl transition-all ${
-                  selectedCategory === category.id
-                    ? 'bg-blue-50 ring-2 ring-blue-600 text-blue-600'
-                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
+                className={`size-[64px] rounded-xl bg-white ring-1 ring-gray-100 shadow-inner grid place-items-center hover:shadow transition-all duration-200 ${
+                  selectedCategory === category.id ? 'ring-2 ring-blue-400/70' : ''
                 }`}
               >
-                <span className="text-2xl">{category.icon}</span>
-                <span className="text-xs font-medium">{category.name}</span>
+                <span className="text-xl">{category.icon}</span>
               </button>
             ))}
           </div>
+          {selectedCategory && (
+            <div className="mt-3 text-center">
+              <span className="text-[14px] font-medium text-gray-700">
+                {categories.find(cat => cat.id === selectedCategory)?.name}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Submit Button */}
-        <Button
+        <button
           type="submit"
-          className="w-full"
-          size="lg"
-          loading={isSubmitting}
-          disabled={!amount || !description || !selectedCategory}
+          disabled={!amount || !description || !selectedCategory || isSubmitting}
+          className="w-full rounded-2xl py-4 font-semibold text-white bg-blue-600 hover:bg-blue-700 active:scale-[0.98] transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          Add {direction === 'outflow' ? 'Expense' : 'Income'}
-        </Button>
-      </form>
+          {isSubmitting ? 'Adding...' : `Add ${direction === 'outflow' ? 'Expense' : 'Income'}`}
+        </button>
+        </form>
+      </div>
     </Modal>
   );
 }

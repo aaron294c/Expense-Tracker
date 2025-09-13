@@ -3,7 +3,6 @@ import { Navigation } from './ui/Navigation';
 import { useHousehold } from '../../hooks/useHousehold';
 import { useAuth } from '../../components/auth/AuthProvider';
 import { useRouter } from 'next/router';
-import clsx from 'clsx';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -19,8 +18,8 @@ export function Layout({ children, showNavigation = true, title }: LayoutProps) 
   // Show loading while checking auth/household
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#f7f8fa] to-white">
+        <div className="animate-spin rounded-full h-16 w-16 border-4 border-brand/20 border-t-brand"></div>
       </div>
     );
   }
@@ -38,22 +37,19 @@ export function Layout({ children, showNavigation = true, title }: LayoutProps) 
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-[#f7f8fa] to-white">
       {title && (
-        <header className="bg-white border-b border-gray-200 sticky top-0 z-30">
-          <div className="max-w-lg mx-auto px-4 py-3">
-            <h1 className="text-lg font-semibold text-gray-900">{title}</h1>
+        <header className="glass-header sticky top-0 z-30 safe-area-top">
+          <div className="mx-auto max-w-[480px] px-4 py-3">
+            <h1 className="text-[28px] leading-[1.2] font-semibold tracking-[-0.02em] text-gray-900">{title}</h1>
           </div>
         </header>
       )}
-      
-      <main className={clsx(
-        'max-w-lg mx-auto min-h-screen',
-        showNavigation && 'pb-20'
-      )}>
+
+      <main className="mx-auto max-w-[480px] px-4 pt-3 pb-[96px] overflow-x-hidden">
         {children}
       </main>
-      
+
       {showNavigation && <Navigation />}
     </div>
   );

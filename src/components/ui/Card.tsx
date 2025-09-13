@@ -1,5 +1,6 @@
 import React from 'react';
 import clsx from 'clsx';
+import { motion } from 'framer-motion';
 
 interface CardProps {
   children: React.ReactNode;
@@ -7,15 +8,33 @@ interface CardProps {
   padding?: boolean;
 }
 
+interface CardContentProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+const MotionDiv = motion.div;
+
 export function Card({ children, className, padding = true }: CardProps) {
   return (
-    <div
+    <MotionDiv
       className={clsx(
-        'bg-white rounded-xl border border-gray-100 shadow-sm',
+        'card',
         padding && 'p-4',
         className
       )}
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.22, ease: [0.25, 0.8, 0.25, 1] }}
     >
+      {children}
+    </MotionDiv>
+  );
+}
+
+export function CardContent({ children, className }: CardContentProps) {
+  return (
+    <div className={clsx('space-y-4', className)}>
       {children}
     </div>
   );

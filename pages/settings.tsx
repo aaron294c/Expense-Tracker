@@ -1,7 +1,8 @@
 // pages/settings.tsx - Enhanced with profile management and data export/import
 import React, { useState, useRef } from 'react';
 import { AuthWrapper } from '../components/auth/AuthWrapper';
-import { AppLayout } from '../components/layout/AppLayout';
+import { Screen } from '../components/_layout/Screen';
+import { BottomDock } from '../components/navigation/BottomDock';
 import { Card } from '../components/ui/Card';
 import { useAuth } from '../contexts/AuthContext';
 import { useHousehold } from '../hooks/useHousehold';
@@ -223,11 +224,13 @@ function SettingsContent() {
   ];
 
   return (
-    <div className="p-4 space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-600 mt-1">Manage your account and preferences</p>
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-[28px] leading-[1.2] font-semibold tracking-[-0.02em] text-gray-900">Settings</h1>
+          <p className="text-[13px] text-gray-500">Manage your account and preferences</p>
+        </div>
       </div>
 
       {/* Message Banner */}
@@ -517,11 +520,22 @@ function SettingsContent() {
 }
 
 export default function SettingsPage() {
+  const { currentHousehold } = useHousehold();
+  const [showAddTransaction, setShowAddTransaction] = useState(false);
+
+  const handleAddTransaction = () => {
+    setShowAddTransaction(true);
+  };
+
   return (
     <AuthWrapper>
-      <AppLayout title="Settings">
-        <SettingsContent />
-      </AppLayout>
+      <>
+        <Screen>
+          <SettingsContent />
+        </Screen>
+
+        <BottomDock onAdd={handleAddTransaction} />
+      </>
     </AuthWrapper>
   );
 }

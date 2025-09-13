@@ -1,5 +1,11 @@
 // pages/dashboard.tsx - Updated with functional buttons and enhanced filtering
 import React, { useState, useEffect } from 'react';
+import { Screen } from '../components/_layout/Screen';
+import { BottomDock } from '../components/navigation/BottomDock';
+import { StatGrid } from '../components/layout/StatGrid';
+import { StatCard } from '../components/mobile/StatCard';
+import { AccordionSection } from '../components/mobile/AccordionSection';
+import { MonthPickerPill } from '../components/ui/MonthPickerPill';
 import { useAuth } from '../contexts/AuthContext';
 import { useHousehold } from '../hooks/useHousehold';
 import { useTransactions } from '../hooks/useTransactions';
@@ -24,6 +30,7 @@ import {
   TrendingUp,
   TrendingDown
 } from 'lucide-react';
+import Link from 'next/link';
 
 // Account type configuration
 const ACCOUNT_TYPES = [
@@ -76,23 +83,25 @@ function AccountsBreakdown({ accounts, fmtCurrency }: { accounts: any[], fmtCurr
   return (
     <div className="space-y-6">
       {/* Net Worth Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="card-premium p-6 text-center">
-          <div className="text-2xl mb-2">💰</div>
-          <p className="text-caption font-medium mb-1">Total Assets</p>
-          <p className="value-large text-2xl text-green-600">{fmtCurrency(totalAssets)}</p>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
+          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600">💰</div>
+          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Total Assets</div>
+          <div className="mt-1 text-[18px] font-semibold tabular-nums text-emerald-600">{fmtCurrency(totalAssets)}</div>
         </div>
-        <div className="card-premium p-6 text-center">
-          <div className="text-2xl mb-2">💳</div>
-          <p className="text-caption font-medium mb-1">Total Debt</p>
-          <p className="value-large text-2xl text-red-600">{fmtCurrency(totalDebt)}</p>
+        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
+          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600">💳</div>
+          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Total Debt</div>
+          <div className="mt-1 text-[18px] font-semibold tabular-nums text-rose-600">{fmtCurrency(totalDebt)}</div>
         </div>
-        <div className="card-premium p-6 text-center">
-          <div className="text-2xl mb-2">{netWorth >= 0 ? '📈' : '📉'}</div>
-          <p className="text-caption font-medium mb-1">Net Worth</p>
-          <p className={`value-large text-2xl ${netWorth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+      </div>
+      <div className="grid grid-cols-1 gap-3 mt-3">
+        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4 text-center">
+          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600 mx-auto">{netWorth >= 0 ? '📈' : '📉'}</div>
+          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Net Worth</div>
+          <div className={`mt-1 text-[18px] font-semibold tabular-nums ${netWorth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
             {fmtCurrency(netWorth)}
-          </p>
+          </div>
         </div>
       </div>
 
@@ -115,43 +124,27 @@ function AccountsBreakdown({ accounts, fmtCurrency }: { accounts: any[], fmtCurr
             const displayBalance = isCredit ? Math.abs(balance) : balance;
             
             return (
-              <div 
-                key={account.account_id} 
-                className="card-premium p-4 hover-lift animate-slide-up"
-                style={{ animationDelay: `${index * 0.1}s` }}
+              <div
+                key={account.account_id}
+                className="rounded-2xl bg-white border border-gray-100 shadow p-3.5 flex items-center justify-between"
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-white shadow-lg bg-gradient-to-br ${gradientColor}`}>
-                      <IconComponent size={24} />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900">{account.name}</h4>
-                      <div className="flex items-center gap-2">
-                        <span className="text-caption text-gray-500 capitalize">
-                          {account.type === 'current' ? 'Checking' : account.type}
-                        </span>
-                        {account.transaction_count > 0 && (
-                          <>
-                            <div className="w-1 h-1 bg-gray-300 rounded-full"></div>
-                            <span className="text-caption text-gray-500">
-                              {account.transaction_count} transactions
-                            </span>
-                          </>
-                        )}
-                      </div>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div className="size-9 rounded-xl bg-gray-50 grid place-items-center">
+                    <IconComponent size={16} className="text-gray-600" />
                   </div>
-                  <div className="text-right">
-                    <div className={`text-2xl font-bold ${
-                      isCredit ? 'text-red-600' : balance >= 0 ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {isCredit && displayBalance > 0 ? '-' : ''}{fmtCurrency(displayBalance)}
-                    </div>
-                    {isCredit && (
-                      <div className="text-caption text-gray-500">Credit Balance</div>
-                    )}
+                  <div>
+                    <h3 className="text-[15px] font-semibold truncate text-gray-900">{account.name}</h3>
+                    <p className="text-[12px] text-gray-500 truncate capitalize">
+                      {account.type === 'current' ? 'Checking' : account.type}
+                    </p>
                   </div>
+                </div>
+                <div className="text-[18px] font-semibold tabular-nums text-right min-w-[96px]">
+                  <span className={
+                    isCredit ? 'text-rose-600' : balance >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                  }>
+                    {isCredit && displayBalance > 0 ? '-' : ''}{fmtCurrency(displayBalance)}
+                  </span>
                 </div>
               </div>
             );
@@ -301,346 +294,171 @@ function DashboardPage() {
   const availableCategories = getAvailableCategories();
 
   return (
-    <div className="min-h-screen pb-20 animate-fade-in">
-      <header className="card-glass border-0 shadow-2xl shadow-blue-500/10 mb-6">
-        <div className="max-w-md mx-auto px-6 py-6">
-          <div className="flex justify-between items-center mb-4">
-            <div className="animate-float">
-              <div className="text-4xl mb-2">💰</div>
-            </div>
-            <button onClick={() => signOut()} className="btn-secondary">
-              <Settings size={20} />
-            </button>
-          </div>
+    <>
+      <Screen>
+        {/* Page Header */}
+        <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-display mb-2">Dashboard</h1>
-            <p className="text-body mb-1">Welcome back, {user.email?.split('@')[0]}</p>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <p className="text-caption font-medium text-blue-600">{currentHousehold.name}</p>
-            </div>
+            <h1 className="text-[28px]/[1.2] font-semibold tracking-[-0.02em] text-gray-900">Dashboard</h1>
+            <p className="text-[13px] text-gray-500">Your financial overview</p>
           </div>
+          <Link href="/settings" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <Settings className="w-5 h-5 text-gray-600" />
+          </Link>
         </div>
-      </header>
 
-      <div className="max-w-md mx-auto px-4 py-6 space-y-6">
+
+        {/* KPI Overview */}
+        <StatGrid>
+          <StatCard
+            icon={<span className="text-xl">💎</span>}
+            label="Total Balance"
+            value={accountsLoading ? "..." : `$${totalBalance.toFixed(2)}`}
+            sub={`${accounts.length} accounts`}
+          />
+          <StatCard
+            icon={<TrendingUp size={20} />}
+            label="Monthly Income"
+            value={transactionsLoading ? "..." : `$${monthlyIncome.toFixed(2)}`}
+            sub={monthDisplay}
+          />
+          <StatCard
+            icon={<span className="text-xl">🎯</span>}
+            label="Budget Used"
+            value={`${Math.round(budgetPct)}%`}
+            sub={totalBudget > 0 ? `$${(totalBudget - totalSpent).toFixed(2)} remaining` : 'No budget set'}
+          />
+          <StatCard
+            icon={<TrendingDown size={20} />}
+            label="This Month"
+            value={transactionsLoading ? "..." : `$${totalSpent.toFixed(2)}`}
+            sub="Spending"
+          />
+        </StatGrid>
+
         {/* Month Navigation */}
-        <div className="card-premium p-6 hover-lift animate-slide-up">
-          <div className="flex items-center justify-between">
-            <button 
-              onClick={goToPreviousMonth} 
-              className="p-3 hover:bg-blue-50 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+        <MonthPickerPill
+          label={monthDisplay}
+          onPrev={goToPreviousMonth}
+          onNext={goToNextMonth}
+        />
+
+        {/* Quick Actions */}
+        <div className="mt-4">
+          <h2 className="text-[18px] font-semibold text-gray-900 mb-3">Quick Actions</h2>
+          <div className="grid grid-cols-3 gap-3">
+            <button
+              onClick={handleAddExpense}
+              className="rounded-2xl bg-white border border-gray-100 shadow p-3 text-left active:scale-95 transition"
             >
-              <ChevronLeft size={24} className="text-blue-600" />
+              <div className="size-8 rounded-lg bg-gray-50 grid place-items-center">
+                <Plus size={16} />
+              </div>
+              <div className="mt-2 text-[14px] font-medium truncate">Add Transaction</div>
+              <div className="text-[12px] text-gray-500 truncate">Record expense</div>
             </button>
-            <div className="text-center">
-              <h2 className="text-heading mb-1">{monthDisplay}</h2>
-              <p className="text-micro text-blue-600 font-medium">Tap to navigate</p>
-            </div>
-            <button 
-              onClick={goToNextMonth} 
-              className="p-3 hover:bg-blue-50 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
+
+            <button
+              onClick={() => setShowAddAccount(true)}
+              className="rounded-2xl bg-white border border-gray-100 shadow p-3 text-left active:scale-95 transition"
             >
-              <ChevronRight size={24} className="text-blue-600" />
+              <div className="size-8 rounded-lg bg-gray-50 grid place-items-center">
+                <Building2 size={16} />
+              </div>
+              <div className="mt-2 text-[14px] font-medium truncate">Add Account</div>
+              <div className="text-[12px] text-gray-500 truncate">Link bank account</div>
+            </button>
+
+            <button
+              onClick={() => window.location.href = '/budgets'}
+              className="rounded-2xl bg-white border border-gray-100 shadow p-3 text-left active:scale-95 transition"
+            >
+              <div className="size-8 rounded-lg bg-gray-50 grid place-items-center">
+                <PieChart size={16} />
+              </div>
+              <div className="mt-2 text-[14px] font-medium truncate">Set Budget</div>
+              <div className="text-[12px] text-gray-500 truncate">Manage spending</div>
             </button>
           </div>
         </div>
 
-        {/* Budget Overview */}
-        <div className="card-premium p-8 text-center hover-glow animate-scale-in">
-          <div className="flex items-center justify-center gap-3 mb-6">
-            <div className="text-3xl animate-bounce-gentle">🎯</div>
-            <h3 className="text-heading">Budget Overview</h3>
+        {/* Accounts */}
+        <div className="mt-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-[18px] font-semibold text-gray-900">Account Balances</h2>
+            <a href="/accounts" className="text-[13px] text-blue-600 font-medium">
+              Manage Accounts →
+            </a>
           </div>
-          <div className="mb-8">
-            <div className="relative w-40 h-40 mx-auto">
-              <svg className="w-40 h-40 transform -rotate-90" viewBox="0 0 120 120">
-                <defs>
-                  <linearGradient id="progressGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" className={budgetPct >= 100 ? 'stop-red-400' : budgetPct >= 80 ? 'stop-yellow-400' : 'stop-blue-400'} />
-                    <stop offset="100%" className={budgetPct >= 100 ? 'stop-red-600' : budgetPct >= 80 ? 'stop-yellow-600' : 'stop-blue-600'} />
-                  </linearGradient>
-                </defs>
-                <circle cx="60" cy="60" r="54" stroke="currentColor" strokeWidth="6" fill="transparent" className="text-gray-200/50" />
-                <circle
-                  cx="60" cy="60" r="54" stroke="url(#progressGradient)" strokeWidth="6" fill="transparent"
-                  strokeDasharray={`${(budgetPct / 100) * 339.292} 339.292`}
-                  strokeLinecap="round"
-                  className="drop-shadow-lg"
-                  style={{ 
-                    animation: 'drawCircle 2s ease-out forwards',
-                    strokeDashoffset: (budgetPct / 100) * 339.292
-                  }}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="value-large text-4xl animate-counter">{Math.round(budgetPct)}%</div>
-                  <div className="text-micro font-medium text-gray-500 uppercase tracking-wide">budget used</div>
-                </div>
-              </div>
+          <AccountsBreakdown accounts={accounts.slice(0, 3)} fmtCurrency={fmtCurrency} />
+          {accounts.length > 3 && (
+            <div className="mt-3 text-center">
+              <a href="/accounts" className="text-[13px] text-blue-600 font-medium">
+                View all {accounts.length} accounts →
+              </a>
             </div>
-          </div>
-          <div className="space-y-4">
-            {totalBudget > 0 ? (
+          )}
+        </div>
+
+
+
+        {/* Recent Transactions */}
+        <div className="mt-4">
+          <AccordionSection title="Recent Transactions">
+            {transactionsLoading ? (
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex justify-between items-center py-3.5 px-3 bg-gray-50 rounded-lg animate-pulse">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gray-200 rounded-full" />
+                      <div>
+                        <div className="h-4 bg-gray-200 rounded w-24 mb-1" />
+                        <div className="h-3 bg-gray-200 rounded w-16" />
+                      </div>
+                    </div>
+                    <div className="h-4 bg-gray-200 rounded w-16" />
+                  </div>
+                ))}
+              </div>
+            ) : filteredTransactions.length > 0 ? (
               <>
-                <div className="bg-gradient-to-r from-gray-50 to-blue-50/30 rounded-2xl p-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-caption font-medium">💸 Spent</span>
-                    <span className="value-currency text-xl text-red-600">{fmtCurrency(totalSpent)}</span>
-                  </div>
+                <div className="space-y-2">
+                  {filteredTransactions.slice(0, 5).map(t => (
+                    <div key={t.id} className="flex items-start justify-between py-3.5 px-3 hover:bg-gray-50 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="size-10 rounded-xl bg-gray-50 grid place-items-center">
+                          {t.primary_category_icon || (t.direction === 'outflow' ? '💸' : '💰')}
+                        </div>
+                        <div>
+                          <h3 className="text-[16px] font-semibold text-gray-900 truncate">{t.merchant || t.description}</h3>
+                          <p className="text-[12px] text-gray-500 truncate">{fmtDate(t.occurred_at)} • {t.account_name}</p>
+                        </div>
+                      </div>
+                      <div className="min-w-[96px] text-right text-[22px] font-semibold tabular-nums">
+                        <span className="text-[14px] text-gray-500 align-top mr-0.5">$</span>
+                        <span className={t.direction === 'outflow' ? 'text-red-600' : 'text-green-600'}>
+                          {t.amount.toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="bg-gradient-to-r from-blue-50/30 to-gray-50 rounded-2xl p-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-caption font-medium">🎯 Budget</span>
-                    <span className="value-currency text-xl text-blue-600">{fmtCurrency(totalBudget)}</span>
-                  </div>
-                </div>
-                <div className="bg-gradient-to-r from-green-50/30 to-gray-50 rounded-2xl p-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-caption font-medium">💰 Remaining</span>
-                    <span className={`value-currency text-xl ${totalBudget - totalSpent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {fmtCurrency(totalBudget - totalSpent)}
-                    </span>
-                  </div>
+                <div className="mt-3 text-center">
+                  <a href="/transactions" className="text-[15px] text-blue-600 font-medium">
+                    View all transactions →
+                  </a>
                 </div>
               </>
             ) : (
-              <div className="text-center py-6">
-                <div className="text-gray-400 mb-3">📊</div>
-                <p className="text-caption text-gray-500 mb-3">No budgets set yet</p>
-                <a
-                  href="/budgets"
-                  className="inline-block px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                >
-                  Set Budgets
-                </a>
+              <div className="text-center py-8">
+                <div className="text-4xl mb-2">📝</div>
+                <p className="text-[13px] text-gray-500 mb-4">No transactions yet</p>
+                <button onClick={handleAddExpense} className="py-3.5 px-3 bg-blue-600 text-white rounded-2xl text-[15px] font-medium">
+                  Add Your First Transaction
+                </button>
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Enhanced Stats */}
-        <div className="grid grid-cols-2 gap-6">
-          <div className="card-glass p-6 text-center hover-lift animate-slide-up" style={{animationDelay: '0.1s'}}>
-            <div className="text-3xl mb-3 animate-float" style={{animationDelay: '0s'}}>💳</div>
-            <p className="text-caption font-medium mb-2">Total Balance</p>
-            <div className="value-large text-2xl mb-2">
-              {accountsLoading ? <LoadingSpinner size="sm" inline /> : (
-                <span className="value-positive animate-counter">{fmtCurrency(totalBalance)}</span>
-              )}
-            </div>
-            <div className="flex items-center justify-center gap-1">
-              <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
-              <p className="text-micro font-medium text-green-600">{accounts.length} accounts</p>
-            </div>
-          </div>
-          <div className="card-glass p-6 text-center hover-lift animate-slide-up" style={{animationDelay: '0.2s'}}>
-            <div className="text-3xl mb-3 animate-float" style={{animationDelay: '0.5s'}}>📈</div>
-            <p className="text-caption font-medium mb-2">Monthly Income</p>
-            <div className="value-large text-2xl mb-2">
-              {transactionsLoading ? <LoadingSpinner size="sm" inline /> : (
-                <span className="text-blue-600 animate-counter">{fmtCurrency(monthlyIncome)}</span>
-              )}
-            </div>
-            <div className="flex items-center justify-center gap-1">
-              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
-              <p className="text-micro font-medium text-blue-600">This month</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Accounts Breakdown */}
-        <div className="card-premium p-8">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="text-3xl animate-bounce-gentle">💳</div>
-              <h3 className="text-heading">Account Balances</h3>
-            </div>
-            <a
-              href="/accounts"
-              className="text-blue-600 hover:text-blue-700 font-medium text-sm flex items-center gap-1 hover:gap-2 transition-all"
-            >
-              Manage Accounts
-              <ChevronRight size={16} />
-            </a>
-          </div>
-          <AccountsBreakdown accounts={accounts} fmtCurrency={fmtCurrency} />
-        </div>
-
-        {/* Quick Actions */}
-        <div className="card p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-            <button 
-              onClick={() => refetchTransactions()}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-              title="Refresh data"
-            >
-              <Settings className="w-4 h-4 text-gray-500" />
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <button 
-              onClick={handleAddExpense}
-              className="flex flex-col items-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-            >
-              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-2">
-                <Plus className="w-6 h-6 text-red-600" />
-              </div>
-              <span className="font-medium text-red-700">Add Expense</span>
-            </button>
-            
-            <button 
-              onClick={handleAddIncome}
-              className="flex flex-col items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-            >
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-2">
-                <Plus className="w-6 h-6 text-green-600" />
-              </div>
-              <span className="font-medium text-green-700">Add Income</span>
-            </button>
-            
-            <button 
-              onClick={() => setShowAddAccount(true)}
-              className="flex flex-col items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-            >
-              <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center mb-2">
-                <CreditCard className="w-6 h-6 text-blue-600" />
-              </div>
-              <span className="font-medium text-blue-700">Add Account</span>
-            </button>
-            
-            <a 
-              href="/insights" 
-              className="flex flex-col items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
-            >
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center mb-2">
-                <PieChart className="w-6 h-6 text-orange-600" />
-              </div>
-              <span className="font-medium text-orange-700">View Insights</span>
-            </a>
-          </div>
-        </div>
-
-        {/* Transaction Filters */}
-        <div className="card p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h4 className="font-medium text-gray-900">Filter Transactions</h4>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="text-blue-600 text-sm"
-            >
-              {showFilters ? 'Hide' : 'Show'} Filters
-            </button>
-          </div>
-
-          {/* Quick Filter Pills */}
-          <div className="flex gap-2 mb-3">
-            {[
-              { key: 'all', label: 'All' },
-              { key: 'today', label: 'Today' },
-              { key: 'week', label: '7 Days' },
-              { key: 'month', label: '30 Days' }
-            ].map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setQuickFilter(key as any)}
-                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                  quickFilter === key
-                    ? 'bg-blue-100 text-blue-700'
-                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {showFilters && (
-            <div className="space-y-3">
-              {/* Category Filter */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-                >
-                  <option value="">All Categories</option>
-                  {availableCategories.map((category: any) => (
-                    <option key={category.id} value={category.id}>
-                      {category.icon} {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Reset Filters */}
-              <button
-                onClick={() => {
-                  setQuickFilter('all');
-                  setSelectedCategory('');
-                }}
-                className="text-sm text-gray-600 hover:text-gray-800"
-              >
-                Reset Filters
-              </button>
-            </div>
-          )}
-
-          <p className="text-xs text-gray-500 mt-2">
-            Showing {filteredTransactions.length} of {transactions.length} transactions
-          </p>
-        </div>
-
-        {/* Recent Transactions */}
-        <div className="card p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">Recent Transactions</h3>
-            <a href="/transactions" className="text-blue-600 hover:text-blue-700 text-sm font-medium">View All →</a>
-          </div>
-
-          {transactionsLoading ? (
-            <div className="space-y-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg animate-pulse">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-gray-200 rounded-full" />
-                    <div>
-                      <div className="h-4 bg-gray-200 rounded w-24 mb-1" />
-                      <div className="h-3 bg-gray-200 rounded w-16" />
-                    </div>
-                  </div>
-                  <div className="h-4 bg-gray-200 rounded w-16" />
-                </div>
-              ))}
-            </div>
-          ) : filteredTransactions.length > 0 ? (
-            <div className="space-y-3">
-              {filteredTransactions.slice(0, 5).map(t => (
-                <div key={t.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">{t.primary_category_icon || (t.direction === 'outflow' ? '💸' : '💰')}</div>
-                    <div>
-                      <p className="font-medium">{t.merchant || t.description}</p>
-                      <p className="text-sm text-gray-500">{fmtDate(t.occurred_at)} • {t.account_name}</p>
-                    </div>
-                  </div>
-                  <span className={`font-semibold ${t.direction === 'outflow' ? 'text-red-600' : 'text-green-600'}`}>
-                    {t.direction === 'outflow' ? '-' : '+'}{fmtCurrency(t.amount)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8">
-              <div className="text-4xl mb-2">📝</div>
-              <p className="text-gray-500 mb-4">No transactions yet</p>
-              <button onClick={handleAddExpense} className="btn-primary">Add Your First Transaction</button>
-            </div>
-          )}
+          </AccordionSection>
         </div>
 
         {/* Category Summary */}
@@ -669,39 +487,9 @@ function DashboardPage() {
             </div>
           </div>
         )}
-      </div>
 
-      {/* Enhanced Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-white/20 px-4 py-3 shadow-2xl shadow-slate-300/20">
-        <div className="max-w-md mx-auto flex justify-around items-center">
-          <a href="/dashboard" className="nav-item active">
-            <div className="text-2xl mb-1">🏠</div>
-            <span className="text-xs font-medium">Home</span>
-          </a>
-          <a href="/transactions" className="nav-item">
-            <div className="text-2xl mb-1">💳</div>
-            <span className="text-xs font-medium">Transactions</span>
-          </a>
-          <button 
-            onClick={handleAddExpense} 
-            className="relative flex flex-col items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl -mt-6 shadow-xl shadow-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/40 transition-all duration-300 hover:scale-105 active:scale-95"
-          >
-            <div className="absolute inset-0 bg-gradient-to-r from-white/10 to-transparent rounded-2xl opacity-0 hover:opacity-100 transition-opacity duration-300"></div>
-            <div className="text-3xl font-light relative z-10">+</div>
-          </button>
-          <a href="/insights" className="nav-item">
-            <div className="text-2xl mb-1">📊</div>
-            <span className="text-xs font-medium">Insights</span>
-          </a>
-          <a href="/settings" className="nav-item">
-            <div className="text-2xl mb-1">⚙️</div>
-            <span className="text-xs font-medium">Settings</span>
-          </a>
-        </div>
-      </nav>
-
-      {/* Modals */}
-      {currentHousehold && (
+        {/* Modals */}
+        {currentHousehold && (
         <>
           <AddTransactionModal
             isOpen={showAddTransaction}
@@ -717,8 +505,11 @@ function DashboardPage() {
             onSuccess={handleAccountSuccess}
           />
         </>
-      )}
-    </div>
+        )}
+      </Screen>
+
+      <BottomDock onAdd={handleAddExpense} />
+    </>
   );
 }
 

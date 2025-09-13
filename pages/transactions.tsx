@@ -1,12 +1,15 @@
 // pages/transactions.tsx - Comprehensive transaction management page
 import React, { useState, useEffect, useMemo } from 'react';
-import { AuthWrapper } from '../components/auth/AuthWrapper';
-import { AppLayout } from '../components/layout/AppLayout';
+import { Screen } from '../components/_layout/Screen';
+import { BottomDock } from '../components/navigation/BottomDock';
+import { OpaqueModal } from '../components/ui/OpaqueModal';
 import { useTransactions } from '../hooks/useTransactions';
 import { useAccounts } from '../hooks/useAccounts';
 import { useHousehold } from '../hooks/useHousehold';
+import { useMonth } from '../hooks/useMonth';
 import { AddTransactionModal } from '../components/transactions/AddTransactionModal';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { MonthPickerPill } from '../components/ui/MonthPickerPill';
 import { formatCurrency, getCurrencyFromHousehold } from '../lib/utils';
 import { authenticatedFetch } from '../lib/api';
 import { 
@@ -24,8 +27,10 @@ import {
   DollarSign,
   Tag,
   CreditCard,
-  X
+  X,
+  Settings
 } from 'lucide-react';
+import Link from 'next/link';
 
 interface FilterState {
   search: string;
@@ -41,6 +46,7 @@ interface FilterState {
 function TransactionsContent() {
   const { currentHousehold } = useHousehold();
   const currency = getCurrencyFromHousehold(currentHousehold, 'USD');
+  const { currentMonth, monthDisplay, goToPreviousMonth, goToNextMonth } = useMonth();
   
   const [filters, setFilters] = useState<FilterState>({
     search: '',
@@ -243,15 +249,32 @@ function TransactionsContent() {
   }
 
   return (
-    <div className="p-4 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Transactions</h1>
-          <p className="text-sm text-gray-600 mt-1">
+          <h1 className="text-[28px] leading-[1.2] font-semibold tracking-[-0.02em] text-gray-900">Transactions</h1>
+          <p className="text-[13px] text-gray-500">
             {filteredTransactions.length} transactions
             {hasActiveFilters && ` (filtered from ${transactions.length})`}
           </p>
+        </div>
+        <Link href="/settings" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+          <Settings className="w-5 h-5 text-gray-600" />
+        </Link>
+      </div>
+
+      {/* Month Navigation - placeholder for future date filtering */}
+      <MonthPickerPill
+        label={monthDisplay}
+        onPrev={goToPreviousMonth}
+        onNext={goToNextMonth}
+      />
+
+      {/* Action Bar */}
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-600">
+          Manage your transactions
         </div>
         <div className="flex gap-2">
           <button
@@ -572,15 +595,17 @@ function TransactionsContent() {
 
       {/* Add Transaction Modal */}
       {currentHousehold && (
-        <AddTransactionModal
-          isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          householdId={currentHousehold.id}
-          onSuccess={() => {
-            refetch();
-            setShowAddModal(false);
-          }}
-        />
+        <OpaqueModal isOpen={showAddModal} onClose={() => setShowAddModal(false)}>
+          <AddTransactionModal
+            isOpen={showAddModal}
+            onClose={() => setShowAddModal(false)}
+            householdId={currentHousehold.id}
+            onSuccess={() => {
+              refetch();
+              setShowAddModal(false);
+            }}
+          />
+        </OpaqueModal>
       )}
     </div>
   );
@@ -715,11 +740,29 @@ function TransactionRow({
 }
 
 export default function TransactionsPage() {
+  const { currentHousehold } = useHousehold();
+  const [showAddTransaction, setShowAddTransaction] = useState(false);
+  
+  const handleAddTransaction = () => {
+    setShowAddTransaction(true);
+  };
+
   return (
-    <AuthWrapper>
-      <AppLayout title="Transactions">
+    <>
+      <Screen>
         <TransactionsContent />
-      </AppLayout>
-    </AuthWrapper>
+      </Screen>
+
+      <BottomDock onAdd={handleAddTransaction} />
+      
+      {currentHousehold && (
+        <AddTransactionModal
+          isOpen={showAddTransaction}
+          onClose={() => setShowAddTransaction(false)}
+          householdId={currentHousehold.id}
+          onSuccess={() => setShowAddTransaction(false)}
+        />
+      )}
+    </>
   );
 }
