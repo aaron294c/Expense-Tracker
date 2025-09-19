@@ -8,58 +8,72 @@ import { CategoryBreakdown } from './CategoryBreakdown';
 import { RecentTransactions } from './RecentTransactions';
 import { QuickActions } from './QuickActions';
 import { LoadingSpinner } from '../common/LoadingSpinner';
+import { ErrorMessage } from '../common/ErrorMessage';
 
 export function Dashboard() {
-  const { household, isLoading: householdLoading } = useHousehold();
-  const { currentMonth } = useMonth();
-  const { categorySummary, isLoading: summaryLoading } = useCategorySummary(currentMonth);
-  const { transactions, isLoading: transactionsLoading } = useTransactions({ limit: 5 });
+  const { currentHousehold, isLoading: householdLoading, error: householdError } = useHousehold();
+  const { currentMonth, setCurrentMonth } = useMonth();
+  const { categorySummary, isLoading: summaryLoading } = useCategorySummary(
+    currentHousehold?.id,
+    currentMonth
+  );
+  const { transactions, isLoading: transactionsLoading } = useTransactions(
+    currentHousehold?.id,
+    { month: currentMonth, limit: 10 }
+  );
 
-  if (householdLoading || summaryLoading) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <LoadingSpinner />
-      </div>
-    );
+  if (householdLoading) {
+    return <LoadingSpinner />;
   }
 
-  if (!household) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-gray-600">No household found. Please create a household to get started.</p>
-      </div>
-    );
+  if (householdError || !currentHousehold) {
+    return <ErrorMessage message="Failed to load household data" />;
   }
+
+  const isLoading = summaryLoading || transactionsLoading;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="border-b border-gray-200 pb-4">
-        <h1 className="text-2xl font-semibold text-gray-900">
-          {household.name} Dashboard
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold text-gray-900">
+          {currentHousehold.name} Dashboard
         </h1>
-        <p className="text-sm text-gray-600 mt-1">
-          {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-        </p>
+        <div className="flex items-center space-x-4">
+          <select
+            value={currentMonth}
+            onChange={(e) => setCurrentMonth(e.target.value)}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          >
+            <option value="2024-01">January 2024</option>
+            <option value="2024-02">February 2024</option>
+            <option value="2024-03">March 2024</option>
+            <option value="2024-04">April 2024</option>
+            <option value="2024-05">May 2024</option>
+            <option value="2024-06">June 2024</option>
+            <option value="2024-07">July 2024</option>
+            <option value="2024-08">August 2024</option>
+            <option value="2024-09">September 2024</option>
+            <option value="2024-10">October 2024</option>
+            <option value="2024-11">November 2024</option>
+            <option value="2024-12">December 2024</option>
+          </select>
+        </div>
       </div>
 
-      {/* Quick Actions */}
-      <QuickActions />
-
-      {/* Budget Overview */}
-      <BudgetOverview categorySummary={categorySummary} />
-
-      {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Category Breakdown */}
-        <CategoryBreakdown categorySummary={categorySummary} />
-
-        {/* Recent Transactions */}
-        <RecentTransactions 
-          transactions={transactions} 
-          isLoading={transactionsLoading} 
-        />
-      </div>
+      {isLoading ? (
+        <LoadingSpinner />
+      ) : (
+        <>
+          <BudgetOverview categorySummary={categorySummary} />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <CategoryBreakdown categorySummary={categorySummary} />
+            <RecentTransactions transactions={transactions} />
+          </div>
+          
+          <QuickActions householdId={currentHousehold.id} />
+        </>
+      )}
     </div>
   );
 }
