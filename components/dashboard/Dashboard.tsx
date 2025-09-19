@@ -7,73 +7,81 @@ import { BudgetOverview } from './BudgetOverview';
 import { CategoryBreakdown } from './CategoryBreakdown';
 import { RecentTransactions } from './RecentTransactions';
 import { QuickActions } from './QuickActions';
-import { LoadingSpinner } from '../common/LoadingSpinner';
-import { ErrorMessage } from '../common/ErrorMessage';
+import { LoadingSpinner } from '@/components/common/LoadingSpinner';
 
-export function Dashboard() {
-  const { currentHousehold, isLoading: householdLoading, error: householdError } = useHousehold();
-  const { currentMonth, setCurrentMonth } = useMonth();
-  const { categorySummary, isLoading: summaryLoading } = useCategorySummary(
+interface DashboardProps {
+  className?: string;
+}
+
+export function Dashboard({ className = '' }: DashboardProps) {
+  const { currentHousehold, isLoading: householdLoading } = useHousehold();
+  const { currentMonth } = useMonth();
+  const { data: categorySummary, isLoading: summaryLoading } = useCategorySummary(
     currentHousehold?.id,
     currentMonth
   );
-  const { transactions, isLoading: transactionsLoading } = useTransactions(
+  const { data: transactions, isLoading: transactionsLoading } = useTransactions(
     currentHousehold?.id,
-    { month: currentMonth, limit: 10 }
+    { limit: 10 }
   );
 
-  if (householdLoading) {
-    return <LoadingSpinner />;
+  if (householdLoading || summaryLoading || transactionsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
 
-  if (householdError || !currentHousehold) {
-    return <ErrorMessage message="Failed to load household data" />;
+  if (!currentHousehold) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">
+            No Household Found
+          </h2>
+          <p className="text-gray-600">
+            Please create or join a household to continue.
+          </p>
+        </div>
+      </div>
+    );
   }
-
-  const isLoading = summaryLoading || transactionsLoading;
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${className}`}>
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-3xl font-bold text-gray-900">
           {currentHousehold.name} Dashboard
         </h1>
-        <div className="flex items-center space-x-4">
-          <select
-            value={currentMonth}
-            onChange={(e) => setCurrentMonth(e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
-          >
-            <option value="2024-01">January 2024</option>
-            <option value="2024-02">February 2024</option>
-            <option value="2024-03">March 2024</option>
-            <option value="2024-04">April 2024</option>
-            <option value="2024-05">May 2024</option>
-            <option value="2024-06">June 2024</option>
-            <option value="2024-07">July 2024</option>
-            <option value="2024-08">August 2024</option>
-            <option value="2024-09">September 2024</option>
-            <option value="2024-10">October 2024</option>
-            <option value="2024-11">November 2024</option>
-            <option value="2024-12">December 2024</option>
-          </select>
+        <QuickActions />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Budget Overview - spans 2 columns on large screens */}
+        <div className="lg:col-span-2">
+          <BudgetOverview 
+            categorySummary={categorySummary}
+            currentMonth={currentMonth}
+          />
+        </div>
+
+        {/* Category Breakdown */}
+        <div>
+          <CategoryBreakdown 
+            categorySummary={categorySummary}
+            currentMonth={currentMonth}
+          />
         </div>
       </div>
 
-      {isLoading ? (
-        <LoadingSpinner />
-      ) : (
-        <>
-          <BudgetOverview categorySummary={categorySummary} />
-          
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <CategoryBreakdown categorySummary={categorySummary} />
-            <RecentTransactions transactions={transactions} />
-          </div>
-          
-          <QuickActions householdId={currentHousehold.id} />
-        </>
-      )}
+      {/* Recent Transactions */}
+      <div>
+        <RecentTransactions 
+          transactions={transactions || []}
+          isLoading={transactionsLoading}
+        />
+      </div>
     </div>
   );
 }
