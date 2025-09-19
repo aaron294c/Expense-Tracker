@@ -8,98 +8,58 @@ import { CategoryBreakdown } from './CategoryBreakdown';
 import { RecentTransactions } from './RecentTransactions';
 import { QuickActions } from './QuickActions';
 import { LoadingSpinner } from '../common/LoadingSpinner';
-import { ErrorDisplay } from '../common/ErrorDisplay';
 
-interface DashboardProps {
-  householdId?: string;
-}
+export function Dashboard() {
+  const { household, isLoading: householdLoading } = useHousehold();
+  const { currentMonth } = useMonth();
+  const { categorySummary, isLoading: summaryLoading } = useCategorySummary(currentMonth);
+  const { transactions, isLoading: transactionsLoading } = useTransactions({ limit: 5 });
 
-export function Dashboard({ householdId }: DashboardProps) {
-  const [selectedMonth, setSelectedMonth] = useState(new Date());
-  
-  const { household, isLoading: householdLoading, error: householdError } = useHousehold(householdId);
-  const { monthData, isLoading: monthLoading } = useMonth(household?.id, selectedMonth);
-  const { categorySummary, isLoading: categoryLoading } = useCategorySummary(household?.id, selectedMonth);
-  const { transactions, isLoading: transactionsLoading } = useTransactions(household?.id, { limit: 10 });
-
-  const isLoading = householdLoading || monthLoading || categoryLoading || transactionsLoading;
-  const error = householdError;
-
-  if (isLoading) {
+  if (householdLoading || summaryLoading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <ErrorDisplay 
-          error={error} 
-          title="Failed to load dashboard" 
-          retry={() => window.location.reload()}
-        />
+      <div className="flex justify-center items-center h-64">
+        <LoadingSpinner />
       </div>
     );
   }
 
   if (!household) {
     return (
-      <div className="p-6">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">
-            No Household Found
-          </h2>
-          <p className="text-gray-600">
-            Please create or join a household to view your dashboard.
-          </p>
-        </div>
+      <div className="text-center py-8">
+        <p className="text-gray-600">No household found. Please create a household to get started.</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="border-b border-gray-200 pb-4">
+        <h1 className="text-2xl font-semibold text-gray-900">
           {household.name} Dashboard
         </h1>
-        <p className="text-gray-600 mt-2">
-          Overview of your household's financial activity
+        <p className="text-sm text-gray-600 mt-1">
+          {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
         </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <div className="lg:col-span-2">
-          <BudgetOverview 
-            monthData={monthData}
-            selectedMonth={selectedMonth}
-            onMonthChange={setSelectedMonth}
-          />
-        </div>
-        <div>
-          <QuickActions householdId={household.id} />
-        </div>
-      </div>
+      {/* Quick Actions */}
+      <QuickActions />
 
+      {/* Budget Overview */}
+      <BudgetOverview categorySummary={categorySummary} />
+
+      {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div>
-          <CategoryBreakdown 
-            categorySummary={categorySummary}
-            selectedMonth={selectedMonth}
-          />
-        </div>
-        <div>
-          <RecentTransactions 
-            transactions={transactions}
-            isLoading={transactionsLoading}
-          />
-        </div>
+        {/* Category Breakdown */}
+        <CategoryBreakdown categorySummary={categorySummary} />
+
+        {/* Recent Transactions */}
+        <RecentTransactions 
+          transactions={transactions} 
+          isLoading={transactionsLoading} 
+        />
       </div>
     </div>
   );
 }
-
-export default Dashboard;
