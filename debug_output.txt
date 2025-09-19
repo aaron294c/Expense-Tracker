@@ -1,0 +1,14 @@
+usage: claude [-h] [--max-turns MAX_TURNS] [--max-minutes MAX_MINUTES]
+              [--debug]
+              [task ...]
+
+Claude Autonomous Coding Agent
+
+positional arguments:
+  task                  Task description
+
+options:
+  -h, --help            show this help message and exit
+  --max-turns MAX_TURNS
+  --max-minutes MAX_MINUTES
+  --debug

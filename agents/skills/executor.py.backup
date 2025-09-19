@@ -1,0 +1,123 @@
+import subprocess
+import os
+from typing import Dict, List, Any
+from pathlib import Path
+import time
+
+class Executor:
+    def __init__(self, timeout: int = 300):
+        self.timeout = timeout
+        self.allowed_commands = {
+            "npm": ["install", "run", "test", "build", "start", "lint", "typecheck"],
+            "yarn": ["install", "run", "test", "build", "start", "lint", "typecheck"],
+            "pnpm": ["install", "run", "test", "build", "start", "lint", "typecheck"],
+            "eslint": [".", "--ext", "--fix", "--cache"],
+            "tsc": ["--noEmit", "--project", "."],
+            "supabase": ["db", "reset", "lint", "status", "migration"],
+            "git": ["status", "diff", "log", "branch", "show"]
+        }
+    
+    def run_command(self, command: str, working_dir: str = None) -> Dict[str, Any]:
+        cmd_parts = command.strip().split()
+        if not cmd_parts:
+            return self._error_result("Empty command")
+        
+        cmd_name = cmd_parts[0]
+        cmd_args = cmd_parts[1:]
+        
+        if not self._is_command_allowed(cmd_name, cmd_args):
+            return self._error_result(f"Command '{command}' not allowed")
+        
+        work_dir = Path(working_dir).resolve() if working_dir else Path.cwd()
+        
+        print(f"🔧 Executing: {command}")
+        
+        try:
+            start_time = time.time()
+            
+            result = subprocess.run(
+                cmd_parts,
+                cwd=work_dir,
+                capture_output=True,
+                text=True,
+                timeout=self.timeout,
+                env=self._get_safe_env()
+            )
+            
+            execution_time = time.time() - start_time
+            
+            stdout = result.stdout
+            stderr = result.stderr
+            
+            # Truncate if too long
+            if len(stdout) > 10000:
+                stdout = stdout[:10000] + "\n[... truncated ...]"
+            if len(stderr) > 10000:
+                stderr = stderr[:10000] + "\n[... truncated ...]"
+            
+            success_indicator = "✅" if result.returncode == 0 else "❌"
+            print(f"{success_indicator} Command completed in {execution_time:.2f}s")
+            
+            return {
+                "command": command,
+                "returncode": result.returncode,
+                "stdout": stdout,
+                "stderr": stderr,
+                "execution_time": execution_time,
+                "working_dir": str(work_dir),
+                "success": result.returncode == 0
+            }
+            
+        except subprocess.TimeoutExpired:
+            return self._error_result(f"Command timed out after {self.timeout}s")
+        except Exception as e:
+            return self._error_result(f"Execution error: {str(e)}")
+    
+    def _is_command_allowed(self, cmd_name: str, cmd_args: List[str]) -> bool:
+        if cmd_name not in self.allowed_commands:
+            return False
+        
+        allowed_args = self.allowed_commands[cmd_name]
+        for arg in cmd_args:
+            if arg.startswith('-'):
+                continue
+            if arg in allowed_args:
+                continue
+            if self._is_safe_path_arg(arg):
+                continue
+            return False
+        
+        return True
+    
+    def _is_safe_path_arg(self, arg: str) -> bool:
+        try:
+            path = Path(arg)
+            if len(str(path)) > 100:
+                return False
+            
+            dangerous = ['.env', '/etc/', '..', '~/']
+            for danger in dangerous:
+                if danger in str(path):
+                    return False
+            
+            return True
+        except Exception:
+            return False
+    
+    def _get_safe_env(self) -> Dict[str, str]:
+        env = os.environ.copy()
+        if 'PATH' not in env:
+            env['PATH'] = '/usr/local/bin:/usr/bin:/bin'
+        return env
+    
+    def _error_result(self, error_message: str) -> Dict[str, Any]:
+        return {
+            "command": "",
+            "returncode": 1,
+            "stdout": "",
+            "stderr": error_message,
+            "execution_time": 0,
+            "working_dir": str(Path.cwd()),
+            "success": False,
+            "error": error_message
+        }
