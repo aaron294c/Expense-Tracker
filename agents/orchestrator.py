@@ -31,6 +31,7 @@ class AgentOrchestrator:
   "plan": ["optional, short step bullets for PLAN"],
   "commands": [
     { "write": { "path": "<repo-relative path>", "content": "<new file text OR full replacement>", "patch": "<optional instead of content>" } },
+    { "replace": { "source": "<source-file>", "target": "<target-file>" } },
     { "run": "<npm|yarn|pnpm|supabase|eslint|tsc|pytest|vitest|jest command>" }
   ],
   "commit": {"message":"<concise>", "files":["<paths you modified>"]},
@@ -124,6 +125,9 @@ Rules:
                 # Execute other decisions
                 result = self._execute_decision(control_data)
                 self._update_task_state(control_data.get("decision", ""), control_data.get("commands", []))
+                if self._is_stuck_new():
+                    print("🔄 Breaking read loop - forcing write phase")
+                    control_data = {"decision": "EDIT", "reason": "Breaking loop", "commands": []}
 
                 # If no progress this turn and the task matches a simple "Create <file> with content '...'",
                 # synthesize the write+commit immediately (not just on STOP).
@@ -157,7 +161,7 @@ Rules:
                 if result:
                     self.context_history.append(self._format_result_context(result))
 
-                if self._is_stuck():
+                if self._is_stuck(control_data):
                     if self.stuck_count >= 2:
                         return {"success": False, "reason": "Agent stuck - no progress for 2 turns"}
                     self.stuck_count += 1
@@ -246,8 +250,10 @@ Rules:
                         if s.startswith("```"):
                             s = re.sub(r"```.*?\n", "", s)
                             s = re.sub(r"```.*?$", "", s)
-                        data = self._extract_json_from_response(s)
-                        if "decision" in data and data["decision"] in {
+                        data = json.loads(s)
+                        if data is None:
+                            continue
+                        if data is not None and "decision" in data and data["decision"] in {
                             "PLAN", "EDIT", "EXECUTE", "TEST", "MIGRATE", "DOCS", "PR", "STOP", "RETRY"
                         }:
                             return data
@@ -282,7 +288,8 @@ Rules:
         result: Dict[str, Any] = {"decision": decision, "outputs": []}
 
         try:
-            if decision in ["EDIT", "MIGRATE"]:
+                            result["outputs"].append(f"File replaced: {source} -> {target}")
+                            self.progress_made = True
                 edit_res = self._handle_edit_commands(commands)
                 result.update(edit_res)
                 if edit_res.get("files_created"):
@@ -503,68 +510,29 @@ Rules:
                     parts.append(f"STDERR: {r['stderr'][:500]}")
         return "\n".join(parts)
 
-    def _extract_json_from_response(self, response_text: str) -> dict:
-        """Extract JSON from Claude response, handling text before/after JSON."""
-        import re
-        import json
-        
-        # First try: Look for JSON in code blocks
-        code_block_patterns = [
-            r'```json\s*(.*?)\s*```',
-            r'```\s*(.*?)\s*```'
-        ]
-        
-        for pattern in code_block_patterns:
-            matches = re.findall(pattern, response_text, re.DOTALL)
-            for match in matches:
-                try:
-                    return json.loads(match.strip())
-                except json.JSONDecodeError:
-                    continue
-        
-        # Second try: Look for JSON object anywhere in text
-        json_pattern = r'\{.*?\}'
-        matches = re.findall(json_pattern, response_text, re.DOTALL)
-        
-        for match in matches:
-            try:
-                parsed = json.loads(match)
-                if isinstance(parsed, dict) and 'decision' in parsed:
-                    return parsed
-            except json.JSONDecodeError:
-                continue
-        
-        return None
-
     def _update_task_state(self, decision, commands):
-        """Track task state and detect loops."""
         if not hasattr(self, 'task_state'):
-            self.task_state = {
-                'files_read': set(),
-                'files_written': set(),
-                'actions_taken': [],
-                'last_decision': None,
-                'consecutive_same_actions': 0
-            }
+            self.task_state = {'consecutive_same_actions': 0, 'last_action': None}
         
         current_action = f"{decision}:{str(commands)}"
-        if current_action == self.task_state['last_decision']:
+        if current_action == self.task_state['last_action']:
             self.task_state['consecutive_same_actions'] += 1
         else:
             self.task_state['consecutive_same_actions'] = 0
-        
-        self.task_state['last_decision'] = current_action
-        
-        # Track file operations
-        for cmd in commands:
-            if 'run' in cmd and 'cat ' in cmd['run']:
-                filename = cmd['run'].replace('cat ', '').strip()
-                self.task_state['files_read'].add(filename)
-            elif 'write' in cmd:
-                self.task_state['files_written'].add(cmd['write']['path'])
+        self.task_state['last_action'] = current_action
 
-    def _is_stuck(self) -> bool:
-        """Check if agent is stuck in a loop."""
-        if not hasattr(self, 'task_state'):
+    def _is_stuck_new(self):
+        return (hasattr(self, 'task_state') and 
+                self.task_state['consecutive_same_actions'] >= 2)
+
+
+    def _handle_file_replacement(self, source_path: str, target_path: str) -> bool:
+        """Handle explicit file replacement operations."""
+        try:
+            import shutil
+            shutil.copy2(source_path, target_path)
+            return True
+        except Exception as e:
+            if self.debug:
+                print(f"File replacement failed: {e}")
             return False
-        return self.task_state['consecutive_same_actions'] >= 2
