@@ -1,53 +1,58 @@
-import { useState } from 'react'
-import { useRouter } from 'next/router'
-import { motion } from 'framer-motion'
-import { supabase } from '../lib/supabase'
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
-import Link from 'next/link'
+import { useState } from 'react';
+import { useRouter } from 'next/router';
+import { motion } from 'framer-motion';
+import { Eye, EyeOff, Mail, Lock, ArrowRight } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 
 export default function LoginImproved() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const router = useRouter()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [isSignUp, setIsSignUp] = useState(false);
+  const router = useRouter();
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoading(true)
-    setError(null)
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError('');
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (error) {
-        setError(error.message)
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+        if (error) throw error;
+        setError('Check your email for the confirmation link!');
       } else {
-        router.push('/dashboard')
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        router.push('/dashboard');
       }
-    } catch (err) {
-      setError('An unexpected error occurred')
+    } catch (error: any) {
+      setError(error.message);
     } finally {
-      setLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const containerVariants = {
-    hidden: { opacity: 0, y: 50 },
+    hidden: { opacity: 0, y: 20 },
     visible: {
       opacity: 1,
       y: 0,
       transition: {
         duration: 0.6,
-        ease: 'easeOut',
+        ease: "easeOut",
         staggerChildren: 0.1
       }
     }
-  }
+  };
 
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
@@ -56,173 +61,209 @@ export default function LoginImproved() {
       y: 0,
       transition: { duration: 0.4 }
     }
-  }
+  };
 
-  const floatingVariants = {
-    animate: {
-      y: [-10, 10, -10],
-      rotate: [0, 5, 0],
-      transition: {
-        duration: 6,
-        repeat: Infinity,
-        ease: 'easeInOut'
-      }
-    }
-  }
+  const buttonVariants = {
+    idle: { scale: 1 },
+    hover: { 
+      scale: 1.02,
+      transition: { duration: 0.2 }
+    },
+    tap: { scale: 0.98 }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center relative overflow-hidden">
+    <div className="min-h-screen relative overflow-hidden">
       {/* Animated Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-purple-900 via-blue-900 to-indigo-900">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%23ffffff" fill-opacity="0.03"%3E%3Ccircle cx="30" cy="30" r="2"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')] opacity-20" />
+      <div className="absolute inset-0 bg-gradient-to-br from-violet-900 via-purple-800 to-indigo-900">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,_rgba(120,119,198,0.3),_transparent_50%)] animate-pulse"></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,_rgba(255,255,255,0.1),_transparent_50%)] animate-pulse" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_40%_40%,_rgba(139,92,246,0.2),_transparent_50%)] animate-pulse" style={{ animationDelay: '2s' }}></div>
       </div>
-      
+
       {/* Floating Elements */}
-      <motion.div
-        variants={floatingVariants}
-        animate="animate"
-        className="absolute top-20 left-20 w-20 h-20 bg-gradient-to-r from-pink-500 to-violet-500 rounded-full blur-xl opacity-30"
+      <motion.div 
+        className="absolute top-20 left-10 w-4 h-4 bg-white/20 rounded-full"
+        animate={{
+          y: [-10, 10, -10],
+          opacity: [0.3, 0.7, 0.3],
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: "easeInOut"
+        }}
       />
-      <motion.div
-        variants={floatingVariants}
-        animate="animate"
-        style={{ animationDelay: '2s' }}
-        className="absolute bottom-20 right-20 w-32 h-32 bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full blur-xl opacity-20"
+      <motion.div 
+        className="absolute top-40 right-16 w-6 h-6 bg-purple-300/20 rounded-full"
+        animate={{
+          y: [10, -10, 10],
+          opacity: [0.4, 0.8, 0.4],
+        }}
+        transition={{
+          duration: 4,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 1
+        }}
       />
-      <motion.div
-        variants={floatingVariants}
-        animate="animate"
-        style={{ animationDelay: '4s' }}
-        className="absolute top-1/2 left-10 w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full blur-lg opacity-25"
+      <motion.div 
+        className="absolute bottom-32 left-1/4 w-3 h-3 bg-indigo-300/30 rounded-full"
+        animate={{
+          y: [-5, 15, -5],
+          opacity: [0.2, 0.6, 0.2],
+        }}
+        transition={{
+          duration: 5,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 2
+        }}
       />
 
       {/* Main Content */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        className="relative z-10 w-full max-w-md p-8"
-      >
-        {/* Glass Card */}
-        <div className="backdrop-blur-xl bg-white/10 rounded-3xl shadow-2xl border border-white/20 p-8">
-          <motion.div variants={itemVariants} className="text-center mb-8">
-            <motion.div
-              animate={{
-                scale: [1, 1.05, 1],
-                rotate: [0, 2, 0]
-              }}
-              transition={{
-                duration: 4,
-                repeat: Infinity,
-                ease: 'easeInOut'
-              }}
-              className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-pink-400 via-purple-500 to-indigo-500 rounded-2xl flex items-center justify-center shadow-lg"
-            >
-              <span className="text-2xl font-bold text-white">$</span>
-            </motion.div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent">
-              Welcome Back
-            </h1>
-            <p className="text-purple-200 mt-2">Sign in to your expense tracker</p>
-          </motion.div>
-
-          <motion.form onSubmit={handleLogin} variants={itemVariants} className="space-y-6">
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-red-500/20 border border-red-500/30 text-red-200 px-4 py-3 rounded-xl text-sm"
+      <div className="relative z-10 flex items-center justify-center min-h-screen px-4">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="w-full max-w-md"
+        >
+          {/* Login Card */}
+          <motion.div 
+            variants={itemVariants}
+            className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20"
+          >
+            {/* Header */}
+            <motion.div variants={itemVariants} className="text-center mb-8">
+              <motion.div 
+                className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-purple-400 to-pink-400 rounded-2xl flex items-center justify-center"
+                whileHover={{ rotate: 360 }}
+                transition={{ duration: 0.6 }}
               >
-                {error}
+                <Lock className="w-8 h-8 text-white" />
               </motion.div>
-            )}
+              <h1 className="text-3xl font-bold text-white mb-2">
+                {isSignUp ? 'Create Account' : 'Welcome Back'}
+              </h1>
+              <p className="text-purple-200">
+                {isSignUp ? 'Join us to start tracking your expenses' : 'Sign in to your account'}
+              </p>
+            </motion.div>
 
-            <div className="space-y-4">
+            {/* Form */}
+            <form onSubmit={handleAuth} className="space-y-6">
+              {/* Email Field */}
               <motion.div variants={itemVariants}>
-                <label htmlFor="email" className="block text-sm font-medium text-purple-200 mb-2">
+                <label className="block text-sm font-medium text-purple-200 mb-2">
                   Email Address
                 </label>
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
-                  placeholder="Enter your email"
-                />
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-300 w-5 h-5" />
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full pl-12 pr-4 py-4 bg-white/10 border border-purple-300/30 rounded-2xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-200"
+                    placeholder="Enter your email"
+                    required
+                  />
+                </div>
               </motion.div>
 
+              {/* Password Field */}
               <motion.div variants={itemVariants}>
-                <label htmlFor="password" className="block text-sm font-medium text-purple-200 mb-2">
+                <label className="block text-sm font-medium text-purple-200 mb-2">
                   Password
                 </label>
                 <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-purple-300 w-5 h-5" />
                   <input
-                    id="password"
                     type={showPassword ? 'text' : 'password'}
-                    required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-4 py-3 pr-12 bg-white/5 border border-white/20 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent backdrop-blur-sm transition-all duration-200"
+                    className="w-full pl-12 pr-12 py-4 bg-white/10 border border-purple-300/30 rounded-2xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition-all duration-200"
                     placeholder="Enter your password"
+                    required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-purple-300 hover:text-white transition-colors"
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-purple-300 hover:text-white transition-colors"
                   >
-                    {showPassword ? (
-                      <EyeSlashIcon className="h-5 w-5" />
-                    ) : (
-                      <EyeIcon className="h-5 w-5" />
-                    )}
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                   </button>
                 </div>
               </motion.div>
-            </div>
 
-            <motion.button
-              variants={itemVariants}
-              type="submit"
-              disabled={loading}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 hover:from-purple-600 hover:via-pink-600 hover:to-red-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                  className="w-5 h-5 border-2 border-white border-t-transparent rounded-full mx-auto"
-                />
-              ) : (
-                'Sign In'
+              {/* Error Message */}
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className={`text-sm p-3 rounded-xl ${error.includes('Check your email') ? 'bg-green-500/20 text-green-200 border border-green-400/30' : 'bg-red-500/20 text-red-200 border border-red-400/30'}`}
+                >
+                  {error}
+                </motion.div>
               )}
-            </motion.button>
-          </motion.form>
 
-          <motion.div variants={itemVariants} className="mt-6 text-center">
-            <p className="text-purple-200 text-sm">
-              Don't have an account?{' '}
-              <Link href="/signup" className="text-pink-300 hover:text-pink-200 font-semibold transition-colors">
-                Sign up
-              </Link>
-            </p>
-            <Link href="/forgot-password" className="text-purple-300 hover:text-purple-200 text-sm transition-colors mt-2 inline-block">
-              Forgot your password?
-            </Link>
+              {/* Submit Button */}
+              <motion.button
+                variants={buttonVariants}
+                initial="idle"
+                whileHover="hover"
+                whileTap="tap"
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-2xl shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    {isSignUp ? 'Create Account' : 'Sign In'}
+                    <ArrowRight className="w-5 h-5" />
+                  </>
+                )}
+              </motion.button>
+            </form>
+
+            {/* Toggle Auth Mode */}
+            <motion.div variants={itemVariants} className="mt-6 text-center">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSignUp(!isSignUp);
+                  setError('');
+                }}
+                className="text-purple-200 hover:text-white transition-colors underline"
+              >
+                {isSignUp ? 'Already have an account? Sign in' : 'Need an account? Sign up'}
+              </button>
+            </motion.div>
+
+            {/* Forgot Password */}
+            {!isSignUp && (
+              <motion.div variants={itemVariants} className="mt-4 text-center">
+                <button
+                  type="button"
+                  className="text-sm text-purple-300 hover:text-white transition-colors"
+                >
+                  Forgot your password?
+                </button>
+              </motion.div>
+            )}
           </motion.div>
-        </div>
 
-        {/* Bottom Text */}
-        <motion.div
-          variants={itemVariants}
-          className="text-center mt-8 text-purple-300 text-sm"
-        >
-          Secure • Fast • Beautiful
+          {/* Footer */}
+          <motion.div 
+            variants={itemVariants}
+            className="mt-8 text-center text-purple-200 text-sm"
+          >
+            <p>Secure authentication powered by Supabase</p>
+          </motion.div>
         </motion.div>
-      </motion.div>
+      </div>
     </div>
-  )
+  );
 }
