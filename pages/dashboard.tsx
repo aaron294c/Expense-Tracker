@@ -83,23 +83,23 @@ function AccountsBreakdown({ accounts, fmtCurrency }: { accounts: any[], fmtCurr
   return (
     <div className="space-y-6">
       {/* Net Worth Summary */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
-          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600">💰</div>
-          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Total Assets</div>
-          <div className="mt-1 text-[18px] font-semibold tabular-nums text-emerald-600">{fmtCurrency(totalAssets)}</div>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
+          <div className="size-10 rounded-full grid place-items-center bg-emerald-50 text-emerald-600 mb-4">💰</div>
+          <div className="text-sm font-medium text-gray-600 mb-1">Total Assets</div>
+          <div className="text-2xl font-semibold tabular-nums text-gray-900">{fmtCurrency(totalAssets)}</div>
         </div>
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
-          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600">💳</div>
-          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Total Debt</div>
-          <div className="mt-1 text-[18px] font-semibold tabular-nums text-rose-600">{fmtCurrency(totalDebt)}</div>
+        <div className="rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
+          <div className="size-10 rounded-full grid place-items-center bg-red-50 text-red-600 mb-4">💳</div>
+          <div className="text-sm font-medium text-gray-600 mb-1">Total Debt</div>
+          <div className="text-2xl font-semibold tabular-nums text-gray-900">{fmtCurrency(totalDebt)}</div>
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-3 mt-3">
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4 text-center">
-          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600 mx-auto">{netWorth >= 0 ? '📈' : '📉'}</div>
-          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Net Worth</div>
-          <div className={`mt-1 text-[18px] font-semibold tabular-nums ${netWorth >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+      <div className="grid grid-cols-1 gap-4 mt-4">
+        <div className="rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6 text-center">
+          <div className={`size-12 rounded-full grid place-items-center mx-auto mb-4 ${netWorth >= 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>{netWorth >= 0 ? '📈' : '📉'}</div>
+          <div className="text-sm font-medium text-gray-600 mb-1">Net Worth</div>
+          <div className={`text-3xl font-semibold tabular-nums ${netWorth >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
             {fmtCurrency(netWorth)}
           </div>
         </div>
@@ -126,22 +126,22 @@ function AccountsBreakdown({ accounts, fmtCurrency }: { accounts: any[], fmtCurr
             return (
               <div
                 key={account.account_id}
-                className="rounded-2xl bg-white border border-gray-100 shadow p-3.5 flex items-center justify-between"
+                className="rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-5 flex items-center justify-between transition-all hover:shadow-xl hover:shadow-gray-900/10"
               >
-                <div className="flex items-center gap-3">
-                  <div className="size-9 rounded-xl bg-gray-50 grid place-items-center">
-                    <IconComponent size={16} className="text-gray-600" />
+                <div className="flex items-center gap-4">
+                  <div className={`size-12 rounded-full grid place-items-center bg-gradient-to-br ${gradientColor}`}>
+                    <IconComponent size={20} className="text-white" />
                   </div>
                   <div>
-                    <h3 className="text-[15px] font-semibold truncate text-gray-900">{account.name}</h3>
-                    <p className="text-[12px] text-gray-500 truncate capitalize">
+                    <h3 className="text-lg font-semibold text-gray-900">{account.name}</h3>
+                    <p className="text-sm text-gray-500 capitalize">
                       {account.type === 'current' ? 'Checking' : account.type}
                     </p>
                   </div>
                 </div>
-                <div className="text-[18px] font-semibold tabular-nums text-right min-w-[96px]">
+                <div className="text-xl font-semibold tabular-nums text-right">
                   <span className={
-                    isCredit ? 'text-rose-600' : balance >= 0 ? 'text-emerald-600' : 'text-rose-600'
+                    isCredit ? 'text-red-600' : balance >= 0 ? 'text-emerald-600' : 'text-red-600'
                   }>
                     {isCredit && displayBalance > 0 ? '-' : ''}{fmtCurrency(displayBalance)}
                   </span>
@@ -174,7 +174,7 @@ function DashboardPage() {
 
   if (authLoading || householdLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -182,10 +182,10 @@ function DashboardPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-          <p className="text-gray-600">Please log in to access the dashboard.</p>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100">
+        <div className="text-center p-8 rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-3">Access Denied</h2>
+          <p className="text-lg text-gray-600">Please log in to access the dashboard.</p>
         </div>
       </div>
     );
@@ -193,12 +193,12 @@ function DashboardPage() {
 
   if (!currentHousehold) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">🏠</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">No Household Found</h2>
-          <p className="text-gray-600 mb-4">You need to join a household to get started.</p>
-          <a href="/setup" className="btn-primary">Setup Household</a>
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-100">
+        <div className="text-center p-12 rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg">
+          <div className="text-8xl mb-6">🏠</div>
+          <h2 className="text-3xl font-semibold text-gray-900 mb-4">No Household Found</h2>
+          <p className="text-lg text-gray-600 mb-8">You need to join a household to get started.</p>
+          <a href="/setup" className="py-4 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-lg font-medium transition-colors">Setup Household</a>
         </div>
       </div>
     );
@@ -294,47 +294,59 @@ function DashboardPage() {
   const availableCategories = getAvailableCategories();
 
   return (
-    <>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
       <Screen>
         {/* Page Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="text-[28px]/[1.2] font-semibold tracking-[-0.02em] text-gray-900">Dashboard</h1>
-            <p className="text-[13px] text-gray-500">Your financial overview</p>
+            <h1 className="text-3xl font-semibold tracking-tight text-gray-900">Dashboard</h1>
+            <p className="text-base text-gray-600 mt-1">Your financial overview</p>
           </div>
-          <Link href="/settings" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-            <Settings className="w-5 h-5 text-gray-600" />
+          <Link href="/settings" className="p-3 hover:bg-gray-100/80 rounded-full transition-all">
+            <Settings className="w-6 h-6 text-gray-600" />
           </Link>
         </div>
 
 
         {/* KPI Overview */}
-        <StatGrid>
-          <StatCard
-            icon={<span className="text-xl">💎</span>}
-            label="Total Balance"
-            value={accountsLoading ? "..." : `$${totalBalance.toFixed(2)}`}
-            sub={`${accounts.length} accounts`}
-          />
-          <StatCard
-            icon={<TrendingUp size={20} />}
-            label="Monthly Income"
-            value={transactionsLoading ? "..." : `$${monthlyIncome.toFixed(2)}`}
-            sub={monthDisplay}
-          />
-          <StatCard
-            icon={<span className="text-xl">🎯</span>}
-            label="Budget Used"
-            value={`${Math.round(budgetPct)}%`}
-            sub={totalBudget > 0 ? `$${(totalBudget - totalSpent).toFixed(2)} remaining` : 'No budget set'}
-          />
-          <StatCard
-            icon={<TrendingDown size={20} />}
-            label="This Month"
-            value={transactionsLoading ? "..." : `$${totalSpent.toFixed(2)}`}
-            sub="Spending"
-          />
-        </StatGrid>
+        <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
+            <div className="size-12 rounded-full grid place-items-center bg-blue-50 text-blue-600 mb-4">💎</div>
+            <div className="text-sm font-medium text-gray-600 mb-1">Total Balance</div>
+            <div className="text-2xl font-semibold tabular-nums text-gray-900">
+              {accountsLoading ? "..." : fmtCurrency(totalBalance)}
+            </div>
+            <div className="text-sm text-gray-500 mt-1">{accounts.length} accounts</div>
+          </div>
+          <div className="rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
+            <div className="size-12 rounded-full grid place-items-center bg-green-50 text-green-600 mb-4">
+              <TrendingUp size={24} />
+            </div>
+            <div className="text-sm font-medium text-gray-600 mb-1">Monthly Income</div>
+            <div className="text-2xl font-semibold tabular-nums text-gray-900">
+              {transactionsLoading ? "..." : fmtCurrency(monthlyIncome)}
+            </div>
+            <div className="text-sm text-gray-500 mt-1">{monthDisplay}</div>
+          </div>
+          <div className="rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
+            <div className="size-12 rounded-full grid place-items-center bg-purple-50 text-purple-600 mb-4">🎯</div>
+            <div className="text-sm font-medium text-gray-600 mb-1">Budget Used</div>
+            <div className="text-2xl font-semibold tabular-nums text-gray-900">{Math.round(budgetPct)}%</div>
+            <div className="text-sm text-gray-500 mt-1">
+              {totalBudget > 0 ? `${fmtCurrency(totalBudget - totalSpent)} remaining` : 'No budget set'}
+            </div>
+          </div>
+          <div className="rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
+            <div className="size-12 rounded-full grid place-items-center bg-red-50 text-red-600 mb-4">
+              <TrendingDown size={24} />
+            </div>
+            <div className="text-sm font-medium text-gray-600 mb-1">This Month</div>
+            <div className="text-2xl font-semibold tabular-nums text-gray-900">
+              {transactionsLoading ? "..." : fmtCurrency(totalSpent)}
+            </div>
+            <div className="text-sm text-gray-500 mt-1">Spending</div>
+          </div>
+        </div>
 
         {/* Month Navigation */}
         <MonthPickerPill
@@ -344,56 +356,56 @@ function DashboardPage() {
         />
 
         {/* Quick Actions */}
-        <div className="mt-4">
-          <h2 className="text-[18px] font-semibold text-gray-900 mb-3">Quick Actions</h2>
-          <div className="grid grid-cols-3 gap-3">
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
+          <div className="grid grid-cols-3 gap-4">
             <button
               onClick={handleAddExpense}
-              className="rounded-2xl bg-white border border-gray-100 shadow p-3 text-left active:scale-95 transition"
+              className="rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6 text-left active:scale-[0.98] transition-all hover:shadow-xl hover:shadow-gray-900/10"
             >
-              <div className="size-8 rounded-lg bg-gray-50 grid place-items-center">
-                <Plus size={16} />
+              <div className="size-12 rounded-full bg-blue-500 grid place-items-center mb-4">
+                <Plus size={20} className="text-white" />
               </div>
-              <div className="mt-2 text-[14px] font-medium truncate">Add Transaction</div>
-              <div className="text-[12px] text-gray-500 truncate">Record expense</div>
+              <div className="text-base font-medium text-gray-900">Add Transaction</div>
+              <div className="text-sm text-gray-500 mt-1">Record expense</div>
             </button>
 
             <button
               onClick={() => setShowAddAccount(true)}
-              className="rounded-2xl bg-white border border-gray-100 shadow p-3 text-left active:scale-95 transition"
+              className="rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6 text-left active:scale-[0.98] transition-all hover:shadow-xl hover:shadow-gray-900/10"
             >
-              <div className="size-8 rounded-lg bg-gray-50 grid place-items-center">
-                <Building2 size={16} />
+              <div className="size-12 rounded-full bg-green-500 grid place-items-center mb-4">
+                <Building2 size={20} className="text-white" />
               </div>
-              <div className="mt-2 text-[14px] font-medium truncate">Add Account</div>
-              <div className="text-[12px] text-gray-500 truncate">Link bank account</div>
+              <div className="text-base font-medium text-gray-900">Add Account</div>
+              <div className="text-sm text-gray-500 mt-1">Link bank account</div>
             </button>
 
             <button
               onClick={() => window.location.href = '/budgets'}
-              className="rounded-2xl bg-white border border-gray-100 shadow p-3 text-left active:scale-95 transition"
+              className="rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6 text-left active:scale-[0.98] transition-all hover:shadow-xl hover:shadow-gray-900/10"
             >
-              <div className="size-8 rounded-lg bg-gray-50 grid place-items-center">
-                <PieChart size={16} />
+              <div className="size-12 rounded-full bg-purple-500 grid place-items-center mb-4">
+                <PieChart size={20} className="text-white" />
               </div>
-              <div className="mt-2 text-[14px] font-medium truncate">Set Budget</div>
-              <div className="text-[12px] text-gray-500 truncate">Manage spending</div>
+              <div className="text-base font-medium text-gray-900">Set Budget</div>
+              <div className="text-sm text-gray-500 mt-1">Manage spending</div>
             </button>
           </div>
         </div>
 
         {/* Accounts */}
-        <div className="mt-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-[18px] font-semibold text-gray-900">Account Balances</h2>
-            <a href="/accounts" className="text-[13px] text-blue-600 font-medium">
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">Account Balances</h2>
+            <a href="/accounts" className="text-base text-blue-600 font-medium hover:text-blue-700 transition-colors">
               Manage Accounts →
             </a>
           </div>
           <AccountsBreakdown accounts={accounts.slice(0, 3)} fmtCurrency={fmtCurrency} />
           {accounts.length > 3 && (
-            <div className="mt-3 text-center">
-              <a href="/accounts" className="text-[13px] text-blue-600 font-medium">
+            <div className="mt-6 text-center">
+              <a href="/accounts" className="text-base text-blue-600 font-medium hover:text-blue-700 transition-colors">
                 View all {accounts.length} accounts →
               </a>
             </div>
@@ -403,84 +415,82 @@ function DashboardPage() {
 
 
         {/* Recent Transactions */}
-        <div className="mt-4">
-          <AccordionSection title="Recent Transactions">
+        <div className="mb-8">
+          <div className="rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Recent Transactions</h2>
+              <a href="/transactions" className="text-base text-blue-600 font-medium hover:text-blue-700 transition-colors">
+                View All →
+              </a>
+            </div>
             {transactionsLoading ? (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {[...Array(3)].map((_, i) => (
-                  <div key={i} className="flex justify-between items-center py-3.5 px-3 bg-gray-50 rounded-lg animate-pulse">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 bg-gray-200 rounded-full" />
+                  <div key={i} className="flex justify-between items-center py-4 animate-pulse">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gray-200 rounded-full" />
                       <div>
-                        <div className="h-4 bg-gray-200 rounded w-24 mb-1" />
-                        <div className="h-3 bg-gray-200 rounded w-16" />
+                        <div className="h-5 bg-gray-200 rounded w-32 mb-2" />
+                        <div className="h-4 bg-gray-200 rounded w-24" />
                       </div>
                     </div>
-                    <div className="h-4 bg-gray-200 rounded w-16" />
+                    <div className="h-5 bg-gray-200 rounded w-20" />
                   </div>
                 ))}
               </div>
             ) : filteredTransactions.length > 0 ? (
-              <>
-                <div className="space-y-2">
-                  {filteredTransactions.slice(0, 5).map(t => (
-                    <div key={t.id} className="flex items-start justify-between py-3.5 px-3 hover:bg-gray-50 rounded-lg">
-                      <div className="flex items-center gap-3">
-                        <div className="size-10 rounded-xl bg-gray-50 grid place-items-center">
-                          {t.primary_category_icon || (t.direction === 'outflow' ? '💸' : '💰')}
-                        </div>
-                        <div>
-                          <h3 className="text-[16px] font-semibold text-gray-900 truncate">{t.merchant || t.description}</h3>
-                          <p className="text-[12px] text-gray-500 truncate">{fmtDate(t.occurred_at)} • {t.account_name}</p>
-                        </div>
+              <div className="space-y-1">
+                {filteredTransactions.slice(0, 5).map(t => (
+                  <div key={t.id} className="flex items-center justify-between py-4 px-4 hover:bg-gray-50/80 rounded-xl transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="size-12 rounded-full bg-gray-100 grid place-items-center text-lg">
+                        {t.primary_category_icon || (t.direction === 'outflow' ? '💸' : '💰')}
                       </div>
-                      <div className="min-w-[96px] text-right text-[22px] font-semibold tabular-nums">
-                        <span className="text-[14px] text-gray-500 align-top mr-0.5">$</span>
-                        <span className={t.direction === 'outflow' ? 'text-red-600' : 'text-green-600'}>
-                          {t.amount.toFixed(2)}
-                        </span>
+                      <div>
+                        <h3 className="text-lg font-medium text-gray-900">{t.merchant || t.description}</h3>
+                        <p className="text-sm text-gray-500">{fmtDate(t.occurred_at)} • {t.account_name}</p>
                       </div>
                     </div>
-                  ))}
-                </div>
-                <div className="mt-3 text-center">
-                  <a href="/transactions" className="text-[15px] text-blue-600 font-medium">
-                    View all transactions →
-                  </a>
-                </div>
-              </>
+                    <div className="text-xl font-semibold tabular-nums text-right">
+                      <span className={t.direction === 'outflow' ? 'text-red-600' : 'text-green-600'}>
+                        {t.direction === 'outflow' ? '-' : '+'}{fmtCurrency(t.amount)}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : (
-              <div className="text-center py-8">
-                <div className="text-4xl mb-2">📝</div>
-                <p className="text-[13px] text-gray-500 mb-4">No transactions yet</p>
-                <button onClick={handleAddExpense} className="py-3.5 px-3 bg-blue-600 text-white rounded-2xl text-[15px] font-medium">
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">📝</div>
+                <p className="text-lg text-gray-500 mb-6">No transactions yet</p>
+                <button onClick={handleAddExpense} className="py-4 px-8 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl text-lg font-medium transition-colors">
                   Add Your First Transaction
                 </button>
               </div>
             )}
-          </AccordionSection>
+          </div>
         </div>
 
         {/* Category Summary */}
         {budgetData?.categories && budgetData.categories.filter(c => c.category_kind === 'expense' && c.spent > 0).length > 0 && (
-          <div className="card p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Categories</h3>
-            <div className="space-y-3">
+          <div className="rounded-2xl bg-white/90 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6 mb-8">
+            <h3 className="text-xl font-semibold text-gray-900 mb-6">Top Categories</h3>
+            <div className="space-y-4">
               {budgetData.categories
                 .filter(c => c.category_kind === 'expense' && c.spent > 0)
                 .sort((a, b) => b.spent - a.spent)
                 .slice(0, 3)
                 .map(c => (
-                  <div key={c.category_id} className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm" style={{ backgroundColor: c.color }}>
+                  <div key={c.category_id} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-xl">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg" style={{ backgroundColor: c.color }}>
                         {c.icon}
                       </div>
-                      <span className="font-medium">{c.category_name}</span>
+                      <span className="text-lg font-medium text-gray-900">{c.category_name}</span>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold">{fmtCurrency(c.spent)}</p>
-                      <p className="text-xs text-gray-500">of {fmtCurrency(c.budget)}</p>
+                      <p className="text-lg font-semibold text-gray-900">{fmtCurrency(c.spent)}</p>
+                      <p className="text-sm text-gray-500">of {fmtCurrency(c.budget)}</p>
                     </div>
                   </div>
                 ))}
@@ -509,7 +519,7 @@ function DashboardPage() {
       </Screen>
 
       <BottomDock onAdd={handleAddExpense} />
-    </>
+    </div>
   );
 }
 

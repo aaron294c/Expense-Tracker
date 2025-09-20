@@ -88,15 +88,15 @@ function BudgetProgress({ item, currency }: { item: BudgetItem; currency: string
   }
 
   return (
-    <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
+    <div className="rounded-2xl bg-white/95 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="size-10 rounded-xl bg-gray-50 grid place-items-center">
+        <div className="flex items-center gap-4">
+          <div className="size-12 rounded-full bg-gray-50 grid place-items-center text-xl">
             {item.icon || '📊'}
           </div>
           <div>
-            <h3 className="text-[16px] font-semibold text-gray-900 truncate">{item.category_name}</h3>
-            <p className="text-[12px] text-gray-500 truncate">
+            <h3 className="text-lg font-semibold text-gray-900">{item.category_name}</h3>
+            <p className="text-sm text-gray-500">
               of ${(item.budget || 0).toFixed(0)} budgeted
             </p>
           </div>
@@ -189,127 +189,292 @@ function BudgetAllocator({
   const totalSpent = currentBudgets.reduce((sum, item) => sum + (item.spent || 0), 0);
   const remainingBudget = totalAllocated - totalSpent;
 
+  const hasAnyBudgets = Object.keys(budgetAmounts).some(key => budgetAmounts[key] && parseFloat(budgetAmounts[key]) > 0);
+  const completionPercentage = hasAnyBudgets ? Math.round((Object.keys(budgetAmounts).filter(key => budgetAmounts[key] && parseFloat(budgetAmounts[key]) > 0).length / expenseCategories.length) * 100) : 0;
+
+  // Quick amount suggestions based on common spending patterns
+  const getQuickAmounts = (categoryName: string) => {
+    const suggestions = {
+      'Food & Dining': [300, 500, 800],
+      'Transportation': [200, 400, 600],
+      'Shopping': [100, 300, 500],
+      'Entertainment': [100, 200, 400],
+      'Bills & Utilities': [150, 300, 500],
+      'Healthcare': [50, 150, 300]
+    };
+    return suggestions[categoryName as keyof typeof suggestions] || [100, 300, 500];
+  };
+
+  // Budget templates for quick setup
+  const budgetTemplates = [
+    {
+      name: "Conservative",
+      icon: "🛡️",
+      description: "Lower spending limits for careful budgeting",
+      multiplier: 0.7
+    },
+    {
+      name: "Balanced",
+      icon: "⚖️",
+      description: "Moderate limits for everyday spending",
+      multiplier: 1.0
+    },
+    {
+      name: "Flexible",
+      icon: "🌟",
+      description: "Higher limits for more spending freedom",
+      multiplier: 1.4
+    }
+  ];
+
+  const applyTemplate = (template: typeof budgetTemplates[0]) => {
+    const baseBudgets = {
+      'Food & Dining': 500,
+      'Transportation': 300,
+      'Shopping': 200,
+      'Entertainment': 150,
+      'Bills & Utilities': 250,
+      'Healthcare': 100
+    };
+
+    const newBudgets: Record<string, string> = {};
+    expenseCategories.forEach(category => {
+      const baseAmount = baseBudgets[category.name as keyof typeof baseBudgets] || 200;
+      const adjustedAmount = Math.round(baseAmount * template.multiplier);
+      newBudgets[category.id] = adjustedAmount.toString();
+    });
+
+    setBudgetAmounts(newBudgets);
+    setSuccessMessage(`✨ ${template.name} budget template applied! Review and adjust as needed.`);
+    setTimeout(() => setSuccessMessage(null), 3000);
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Summary KPI Cards */}
-      <StatGrid>
-        <StatCard
-          icon={<span className="text-xl">🎯</span>}
-          label="Total Allocated"
-          value={`$${totalAllocated.toFixed(2)}`}
-          sub="Monthly budget"
-        />
-        <StatCard
-          icon={<span className="text-xl">{remainingBudget >= 0 ? '💰' : '⚠️'}</span>}
-          label="Remaining"
-          value={`$${Math.abs(remainingBudget).toFixed(2)}`}
-          sub="This month"
-        />
-        <StatCard
-          icon={<TrendingDown size={20} />}
-          label="Total Spent"
-          value={`$${totalSpent.toFixed(2)}`}
-          sub="Categories"
-        />
-      </StatGrid>
+    <div className="space-y-8">
+      {/* Progress Header */}
+      <div className="rounded-2xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100/50 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-2xl font-semibold text-gray-900">Budget Setup</h2>
+            <p className="text-base text-gray-600 mt-1">
+              {hasAnyBudgets ? `${completionPercentage}% complete` : 'Set your monthly spending limits'}
+            </p>
+          </div>
+          <div className="size-16 rounded-full bg-blue-500 grid place-items-center text-white text-2xl">
+            {hasAnyBudgets ? '🎯' : '📝'}
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-full bg-blue-200/50 rounded-full h-3">
+          <div
+            className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-500"
+            style={{ width: `${completionPercentage}%` }}
+          />
+        </div>
+
+        {/* Summary Cards */}
+        {hasAnyBudgets && (
+          <div className="grid grid-cols-3 gap-4 mt-6">
+            <div className="text-center">
+              <div className="text-2xl font-semibold text-gray-900">${totalAllocated.toFixed(0)}</div>
+              <div className="text-sm text-gray-600">Total Budget</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-semibold text-gray-900">${totalSpent.toFixed(0)}</div>
+              <div className="text-sm text-gray-600">Spent</div>
+            </div>
+            <div className="text-center">
+              <div className={`text-2xl font-semibold ${remainingBudget >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                ${Math.abs(remainingBudget).toFixed(0)}
+              </div>
+              <div className="text-sm text-gray-600">{remainingBudget >= 0 ? 'Remaining' : 'Over Budget'}</div>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Success Message */}
       {successMessage && (
-        <div className="bg-green-50 border border-green-200 rounded-2xl p-4 animate-slide-up">
+        <div className="bg-green-50/80 backdrop-blur border border-green-200/50 rounded-2xl p-4 animate-slide-up shadow-lg">
           <p className="text-green-700 text-center font-medium">{successMessage}</p>
         </div>
       )}
 
+      {/* Budget Templates - Show when no budgets are set */}
+      {!hasAnyBudgets && (
+        <div className="rounded-2xl bg-white/95 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
+          <div className="text-center mb-6">
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">Quick Start Templates</h3>
+            <p className="text-base text-gray-600">Choose a template to get started, then customize as needed</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {budgetTemplates.map((template) => (
+              <button
+                key={template.name}
+                onClick={() => applyTemplate(template)}
+                className="p-6 text-left rounded-2xl border border-gray-200/80 hover:border-blue-300/80 hover:bg-blue-50/50 transition-all active:scale-[0.98] group"
+              >
+                <div className="size-12 rounded-full bg-gray-100 group-hover:bg-blue-100 grid place-items-center text-2xl mb-4 transition-colors">
+                  {template.icon}
+                </div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-2">{template.name}</h4>
+                <p className="text-sm text-gray-600">{template.description}</p>
+                <div className="mt-3 text-xs text-blue-600 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                  Click to apply →
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-6 p-4 bg-blue-50/50 rounded-xl border border-blue-200/50">
+            <div className="flex items-start gap-3">
+              <div className="size-6 rounded-full bg-blue-500 grid place-items-center text-white text-sm font-bold flex-shrink-0 mt-0.5">
+                💡
+              </div>
+              <div>
+                <h4 className="text-sm font-medium text-blue-900 mb-1">Pro Tip</h4>
+                <p className="text-sm text-blue-700">
+                  Templates are a starting point. You can always adjust individual categories after applying a template.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Category Budget Cards */}
-      <div className="card-premium p-8">
-        <div className="mb-6">
-          <h2 className="text-section-title mb-2">Set Budget Limits</h2>
-          <p className="text-body">Allocate monthly spending limits for each category</p>
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-900">Category Budgets</h2>
+          <div className="text-sm text-gray-500">
+            {Object.keys(budgetAmounts).filter(key => budgetAmounts[key] && parseFloat(budgetAmounts[key]) > 0).length} of {expenseCategories.length} set
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="space-y-4">
           {expenseCategories.map(category => {
             const currentBudget = currentBudgets.find(b => b.category_id === category.id);
             const spent = currentBudget?.spent || 0;
-            const categoryColor = category.color || '#6B7280';
-            
+            const hasBudget = budgetAmounts[category.id] && parseFloat(budgetAmounts[category.id]) > 0;
+            const budgetAmount = parseFloat(budgetAmounts[category.id] || '0');
+            const isOverBudget = hasBudget && spent > budgetAmount;
+            const usagePercentage = hasBudget ? (spent / budgetAmount) * 100 : 0;
+            const quickAmounts = getQuickAmounts(category.name);
+
             return (
-              <div key={category.id} className="card-unified motion-card-mount">
-                {/* Top row: icon + title/label + amount */}
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="size-10 rounded-xl bg-gray-50 grid place-items-center">
+              <div key={category.id} className="rounded-2xl bg-white/95 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-4">
+                    <div className="size-12 rounded-full bg-gray-50 grid place-items-center text-xl">
                       {category.icon || '📊'}
                     </div>
-                    <div className="flex flex-col">
-                      <h3 className="card-title">{category.name}</h3>
-                      <p className="card-subtitle">
-                        {spent > 0 ? `Spent this month` : 'No spending yet'}
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{category.name}</h3>
+                      <p className="text-sm text-gray-500">
+                        {spent > 0 ? `$${spent.toFixed(0)} spent this month` : 'No spending yet'}
                       </p>
                     </div>
                   </div>
-                  <div className="card-amount">
-                    <span className="currency-symbol">$</span>
-                    {spent.toFixed(2)}
-                  </div>
-                </div>
-                
-                
-                {/* Middle row: chips */}
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {budgetAmounts[category.id] && parseFloat(budgetAmounts[category.id]) > 0 ? (
-                    <>
-                      {spent > parseFloat(budgetAmounts[category.id]) ? (
-                        <span className="status-chip-danger">Over Budget</span>
-                      ) : (
-                        <span className="status-chip-success">On Track</span>
-                      )}
-                      {spent > parseFloat(budgetAmounts[category.id]) && (
-                        <span className="status-chip-danger">
-                          ${(spent - parseFloat(budgetAmounts[category.id])).toFixed(2)} over
-                        </span>
-                      )}
-                    </>
-                  ) : (
-                    <span className="status-chip-warning">No Budget Set</span>
+
+                  {/* Status Badge */}
+                  {hasBudget && (
+                    <div className={`px-3 py-1 rounded-full text-sm font-medium ${
+                      isOverBudget
+                        ? 'bg-red-100 text-red-700'
+                        : usagePercentage > 80
+                        ? 'bg-orange-100 text-orange-700'
+                        : 'bg-green-100 text-green-700'
+                    }`}>
+                      {isOverBudget ? 'Over Budget' : usagePercentage > 80 ? 'Near Limit' : 'On Track'}
+                    </div>
                   )}
                 </div>
 
-                {/* Input Section */}
-                <div className="mt-3">
+                {/* Budget Input */}
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">
+                    Monthly Budget Limit
+                  </label>
                   <div className="relative">
-                    <div className="absolute left-4 top-4 text-gray-400 font-medium text-lg">$</div>
+                    <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg font-medium">$</div>
                     <input
                       type="number"
-                      step="0.01"
+                      step="1"
                       min="0"
                       value={budgetAmounts[category.id] || ''}
-                      onChange={(e) => setBudgetAmounts(prev => ({ 
-                        ...prev, 
-                        [category.id]: e.target.value 
+                      onChange={(e) => setBudgetAmounts(prev => ({
+                        ...prev,
+                        [category.id]: e.target.value
                       }))}
-                      className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 pl-8 text-[15px] placeholder:text-gray-400 focus:outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-200"
-                      placeholder="Enter budget amount"
+                      className="w-full rounded-2xl border border-gray-200/80 bg-white/90 px-5 py-4 pl-10 text-lg placeholder:text-gray-400 focus:outline-none focus:border-blue-500/50 focus:ring-4 focus:ring-blue-500/10 transition-all"
+                      placeholder="0"
                     />
                   </div>
+
+                  {/* Quick Amount Suggestions */}
+                  <div className="flex gap-2 mt-3">
+                    <div className="text-xs text-gray-500 self-center mr-2">Quick:</div>
+                    {quickAmounts.map((amount) => (
+                      <button
+                        key={amount}
+                        type="button"
+                        onClick={() => setBudgetAmounts(prev => ({
+                          ...prev,
+                          [category.id]: amount.toString()
+                        }))}
+                        className="px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100/80 hover:bg-blue-100/80 hover:text-blue-700 rounded-xl transition-all active:scale-95"
+                      >
+                        ${amount}
+                      </button>
+                    ))}
+                    {/* Smart suggestion based on spending */}
+                    {spent > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setBudgetAmounts(prev => ({
+                          ...prev,
+                          [category.id]: Math.round(spent * 1.2).toString()
+                        }))}
+                        className="px-3 py-2 text-sm font-medium text-blue-600 bg-blue-100/80 hover:bg-blue-200/80 rounded-xl transition-all active:scale-95 border border-blue-200/50"
+                      >
+                        ${Math.round(spent * 1.2)} ✨
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Smart insight */}
+                  {spent > 0 && (
+                    <div className="mt-2 text-xs text-blue-600 bg-blue-50/50 rounded-lg px-2 py-1">
+                      💡 Based on your ${spent.toFixed(0)} spending, we suggest ${Math.round(spent * 1.2)}
+                    </div>
+                  )}
                 </div>
-                
-                {/* Bottom row: progress bar + label */}
-                {budgetAmounts[category.id] && parseFloat(budgetAmounts[category.id]) > 0 && (
-                  <div className="mt-4">
-                    <div className="h-2 w-full rounded-full bg-gray-200">
+
+                {/* Progress Visualization */}
+                {hasBudget && (
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm text-gray-600">
+                      <span>${spent.toFixed(0)} spent</span>
+                      <span>${(budgetAmount - spent).toFixed(0)} remaining</span>
+                    </div>
+                    <div className="w-full bg-gray-200/50 rounded-full h-3">
                       <div
-                        className={`h-2 rounded-full ${
-                          spent > parseFloat(budgetAmounts[category.id]) ? 'bg-rose-500' : 'bg-emerald-500'
+                        className={`h-3 rounded-full transition-all duration-500 ${
+                          isOverBudget
+                            ? 'bg-gradient-to-r from-red-400 to-red-600'
+                            : usagePercentage > 80
+                            ? 'bg-gradient-to-r from-orange-400 to-orange-600'
+                            : 'bg-gradient-to-r from-green-400 to-green-600'
                         }`}
-                        style={{ 
-                          width: `${Math.min((spent / parseFloat(budgetAmounts[category.id])) * 100, 100)}%` 
-                        }}
+                        style={{ width: `${Math.min(usagePercentage, 100)}%` }}
                       />
                     </div>
-                    <p className="progress-label mt-1">
-                      {Math.round((spent / parseFloat(budgetAmounts[category.id])) * 100)}% of budget used
-                    </p>
+                    <div className="text-center text-sm text-gray-600">
+                      {Math.round(usagePercentage)}% of budget used
+                    </div>
                   </div>
                 )}
               </div>
@@ -317,20 +482,63 @@ function BudgetAllocator({
           })}
         </div>
 
-        <div className="mt-8 flex gap-4">
+        {/* Helpful Tips */}
+        {hasAnyBudgets && (
+          <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100/50 p-6">
+            <div className="flex items-start gap-4">
+              <div className="size-12 rounded-full bg-indigo-100 grid place-items-center text-indigo-600 text-xl flex-shrink-0">
+                🎯
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Budget Tips</h3>
+                <ul className="space-y-2 text-sm text-gray-700">
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 mt-0.5">✓</span>
+                    <span>Review and adjust your budgets monthly based on your spending patterns</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 mt-0.5">✓</span>
+                    <span>Set realistic limits - too strict budgets are harder to follow</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 mt-0.5">✓</span>
+                    <span>Include a small buffer for unexpected expenses in each category</span>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Save Section */}
+        <div className="sticky bottom-24 bg-white/95 backdrop-blur border border-gray-100/50 rounded-2xl p-6 shadow-lg">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Ready to Save?</h3>
+              <p className="text-sm text-gray-600">
+                {hasAnyBudgets ? 'Your budget setup looks great!' : 'Set at least one budget to continue'}
+              </p>
+            </div>
+            {hasAnyBudgets && (
+              <div className="size-12 rounded-full bg-green-100 grid place-items-center text-green-600">
+                <CheckCircle size={24} />
+              </div>
+            )}
+          </div>
+
           <button
             onClick={handleSave}
-            disabled={isLoading || Object.keys(budgetAmounts).length === 0}
-            className="flex-1 btn-primary text-lg py-4 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isLoading || !hasAnyBudgets}
+            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-4 rounded-2xl text-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98] shadow-lg shadow-blue-500/25 flex items-center justify-center gap-3"
           >
             {isLoading ? (
               <>
-                <LoadingSpinner size="sm" className="mr-3" />
+                <LoadingSpinner size="sm" />
                 <span>Saving Budget...</span>
               </>
             ) : (
               <>
-                <Save size={20} className="mr-3" />
+                <Save size={20} />
                 <span>Save Budget Limits</span>
               </>
             )}
@@ -630,13 +838,13 @@ function BudgetsPage() {
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
       <Screen>
         <BudgetsContent />
       </Screen>
 
       <BottomDock onAdd={handleAddTransaction} />
-      
+
       {currentHousehold && (
         <AddTransactionModal
           isOpen={showAddTransaction}
@@ -645,7 +853,7 @@ function BudgetsPage() {
           onSuccess={() => setShowAddTransaction(false)}
         />
       )}
-    </>
+    </div>
   );
 }
 

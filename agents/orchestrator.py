@@ -31,7 +31,6 @@ class AgentOrchestrator:
   "plan": ["optional, short step bullets for PLAN"],
   "commands": [
     { "write": { "path": "<repo-relative path>", "content": "<new file text OR full replacement>", "patch": "<optional instead of content>" } },
-    { "replace": { "source": "<source-file>", "target": "<target-file>" } },
     { "run": "<npm|yarn|pnpm|supabase|eslint|tsc|pytest|vitest|jest command>" }
   ],
   "commit": {"message":"<concise>", "files":["<paths you modified>"]},
@@ -124,10 +123,6 @@ Rules:
 
                 # Execute other decisions
                 result = self._execute_decision(control_data)
-                self._update_task_state(control_data.get("decision", ""), control_data.get("commands", []))
-                if self._is_stuck_new():
-                    print("🔄 Breaking read loop - forcing write phase")
-                    control_data = {"decision": "EDIT", "reason": "Breaking loop", "commands": []}
 
                 # If no progress this turn and the task matches a simple "Create <file> with content '...'",
                 # synthesize the write+commit immediately (not just on STOP).
@@ -251,9 +246,7 @@ Rules:
                             s = re.sub(r"```.*?\n", "", s)
                             s = re.sub(r"```.*?$", "", s)
                         data = json.loads(s)
-                        if data is None:
-                            continue
-                        if data is not None and "decision" in data and data["decision"] in {
+                        if "decision" in data and data["decision"] in {
                             "PLAN", "EDIT", "EXECUTE", "TEST", "MIGRATE", "DOCS", "PR", "STOP", "RETRY"
                         }:
                             return data
@@ -288,8 +281,7 @@ Rules:
         result: Dict[str, Any] = {"decision": decision, "outputs": []}
 
         try:
-                            result["outputs"].append(f"File replaced: {source} -> {target}")
-                            self.progress_made = True
+            if decision in ["EDIT", "MIGRATE"]:
                 edit_res = self._handle_edit_commands(commands)
                 result.update(edit_res)
                 if edit_res.get("files_created"):
@@ -509,30 +501,3 @@ Rules:
                 if r.get("stderr"):
                     parts.append(f"STDERR: {r['stderr'][:500]}")
         return "\n".join(parts)
-
-    def _update_task_state(self, decision, commands):
-        if not hasattr(self, 'task_state'):
-            self.task_state = {'consecutive_same_actions': 0, 'last_action': None}
-        
-        current_action = f"{decision}:{str(commands)}"
-        if current_action == self.task_state['last_action']:
-            self.task_state['consecutive_same_actions'] += 1
-        else:
-            self.task_state['consecutive_same_actions'] = 0
-        self.task_state['last_action'] = current_action
-
-    def _is_stuck_new(self):
-        return (hasattr(self, 'task_state') and 
-                self.task_state['consecutive_same_actions'] >= 2)
-
-
-    def _handle_file_replacement(self, source_path: str, target_path: str) -> bool:
-        """Handle explicit file replacement operations."""
-        try:
-            import shutil
-            shutil.copy2(source_path, target_path)
-            return True
-        except Exception as e:
-            if self.debug:
-                print(f"File replacement failed: {e}")
-            return False

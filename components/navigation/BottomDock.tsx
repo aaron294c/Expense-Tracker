@@ -23,11 +23,11 @@ export function BottomDock({ onAdd }: { onAdd: () => void }) {
       <div
         className="
           mx-auto max-w-[480px]
-          rounded-t-2xl bg-white/95 backdrop-blur
-          border-t border-gray-200
-          shadow-[0_-8px_30px_rgba(0,0,0,0.06)]
+          rounded-t-3xl bg-white/95 backdrop-blur
+          border-t border-gray-100/50
+          shadow-[0_-12px_40px_rgba(0,0,0,0.08)]
           relative
-          h-[68px]
+          h-[80px]
           pb-[calc(env(safe-area-inset-bottom))]
           isolation-auto
         "
@@ -37,11 +37,11 @@ export function BottomDock({ onAdd }: { onAdd: () => void }) {
           aria-hidden
           className="
             pointer-events-none
-            absolute -top-7 left-1/2 -translate-x-1/2
-            w-28 h-14 rounded-t-[9999px]
+            absolute -top-8 left-1/2 -translate-x-1/2
+            w-32 h-16 rounded-t-[9999px]
             bg-white/95 backdrop-blur
-            border border-gray-200
-            shadow-[0_-10px_24px_rgba(0,0,0,0.08)]
+            border border-gray-100/50
+            shadow-[0_-12px_28px_rgba(0,0,0,0.1)]
             z-10
           "
         />
@@ -52,17 +52,18 @@ export function BottomDock({ onAdd }: { onAdd: () => void }) {
           onClick={onAdd}
           aria-label="Add"
           className="
-            absolute left-1/2 -translate-x-1/2 -top-9
-            size-[68px] rounded-full
-            bg-[#2563eb] text-white
+            absolute left-1/2 -translate-x-1/2 -top-10
+            size-[72px] rounded-full
+            bg-gradient-to-br from-blue-500 to-blue-600 text-white
             grid place-items-center
-            ring-6 ring-white
-            shadow-[0_16px_36px_rgba(37,99,235,0.45)]
-            active:scale-95 transition
+            ring-8 ring-white/80
+            shadow-[0_20px_40px_rgba(37,99,235,0.4)]
+            active:scale-95 transition-all duration-200
+            hover:shadow-[0_24px_48px_rgba(37,99,235,0.5)]
             z-20
           "
         >
-          <Plus className="size-7" />
+          <Plus className="size-8" />
         </button>
 
         {/* Tabs (grid of five; center column reserved for FAB space) */}
@@ -99,10 +100,10 @@ function Tab({
       aria-current={active ? "page" : undefined}
     >
       {active && (
-        <span className="absolute top-1 h-1 w-8 rounded-full bg-blue-600/80" />
+        <span className="absolute top-2 h-1 w-10 rounded-full bg-blue-600" />
       )}
-      <Icon className={`size-6 ${active ? "text-blue-600" : "text-gray-500"}`} />
-      <span className={`mt-1 text-[11px] ${active ? "text-blue-600" : "text-gray-500"}`}>
+      <Icon className={`size-7 transition-colors ${active ? "text-blue-600" : "text-gray-400"}`} />
+      <span className={`mt-2 text-xs font-medium transition-colors ${active ? "text-blue-600" : "text-gray-500"}`}>
         {label}
       </span>
     </Link>

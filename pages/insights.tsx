@@ -217,13 +217,13 @@ function InsightsContent() {
   return (
     <div className="space-y-6">
       {/* Page Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-[28px] leading-[1.2] font-semibold tracking-[-0.02em] text-gray-900">Insights</h1>
-          <p className="text-[13px] text-gray-500">Financial analytics and trends</p>
+          <h1 className="text-3xl font-semibold tracking-tight text-gray-900">Financial Insights</h1>
+          <p className="text-base text-gray-600 mt-1">Understand your spending patterns and trends</p>
         </div>
-        <Link href="/settings" className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-          <Settings className="w-5 h-5 text-gray-600" />
+        <Link href="/settings" className="p-3 hover:bg-gray-100/80 rounded-full transition-all">
+          <Settings className="w-6 h-6 text-gray-600" />
         </Link>
       </div>
 
@@ -234,91 +234,140 @@ function InsightsContent() {
         onNext={goToNextMonth}
       />
 
-      {/* Insights Stat Cards - 2-col grid */}
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
-          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600">
-            <DollarSign size={16} />
+      {/* Enhanced Insights Overview */}
+      <div className="grid grid-cols-2 gap-4 mb-8">
+        <div className="rounded-2xl bg-white/95 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
+          <div className="size-12 rounded-full grid place-items-center bg-blue-50 text-blue-600 mb-4">
+            <DollarSign size={24} />
           </div>
-          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Total Spent</div>
-          <div className="mt-1 text-[18px] font-semibold tabular-nums text-gray-900">{formatCurrency(totalSpent, currency)}</div>
-          <div className="mt-1 text-[12px] text-gray-500">This month</div>
+          <div className="text-sm font-medium text-gray-600 mb-1">Total Spent</div>
+          <div className="text-2xl font-semibold tabular-nums text-gray-900">{formatCurrency(totalSpent, currency)}</div>
+          <div className="text-sm text-gray-500 mt-1">This month</div>
         </div>
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
-          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600">
-            <Target size={16} />
+        <div className="rounded-2xl bg-white/95 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
+          <div className={`size-12 rounded-full grid place-items-center mb-4 ${
+            budgetUsed > 100 ? 'bg-red-50 text-red-600' :
+            budgetUsed > 80 ? 'bg-orange-50 text-orange-600' :
+            'bg-green-50 text-green-600'
+          }`}>
+            <Target size={24} />
           </div>
-          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Budget Used</div>
-          <div className="mt-1 text-[18px] font-semibold tabular-nums text-gray-900">{Math.round(budgetUsed)}%</div>
-          <div className="mt-1 text-[12px] text-gray-500">Monthly budget</div>
+          <div className="text-sm font-medium text-gray-600 mb-1">Budget Used</div>
+          <div className={`text-2xl font-semibold tabular-nums ${
+            budgetUsed > 100 ? 'text-red-600' :
+            budgetUsed > 80 ? 'text-orange-600' :
+            'text-green-600'
+          }`}>{Math.round(budgetUsed)}%</div>
+          <div className="text-sm text-gray-500 mt-1">
+            {budgetUsed > 100 ? 'Over budget' : 'On track'}
+          </div>
         </div>
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
-          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600">
-            <Activity size={16} />
+        <div className="rounded-2xl bg-white/95 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
+          <div className="size-12 rounded-full grid place-items-center bg-purple-50 text-purple-600 mb-4">
+            <Activity size={24} />
           </div>
-          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Transactions</div>
-          <div className="mt-1 text-[18px] font-semibold tabular-nums text-gray-900">{transactions.filter(t => t.occurred_at.startsWith(currentMonth)).length}</div>
-          <div className="mt-1 text-[12px] text-gray-500">This month</div>
+          <div className="text-sm font-medium text-gray-600 mb-1">Transactions</div>
+          <div className="text-2xl font-semibold tabular-nums text-gray-900">{transactions.filter(t => t.occurred_at.startsWith(currentMonth)).length}</div>
+          <div className="text-sm text-gray-500 mt-1">This month</div>
         </div>
-        <div className="rounded-2xl bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] p-4">
-          <div className="size-9 rounded-xl grid place-items-center bg-gray-50 text-gray-600">
-            <Zap size={16} />
+        <div className="rounded-2xl bg-white/95 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
+          <div className="size-12 rounded-full grid place-items-center bg-emerald-50 text-emerald-600 mb-4">
+            <Zap size={24} />
           </div>
-          <div className="mt-2 text-[12.5px] text-gray-500 truncate">Avg. Daily</div>
-          <div className="mt-1 text-[18px] font-semibold tabular-nums text-gray-900">{formatCurrency(totalSpent / new Date().getDate(), currency)}</div>
-          <div className="mt-1 text-[12px] text-gray-500">Per day</div>
+          <div className="text-sm font-medium text-gray-600 mb-1">Daily Average</div>
+          <div className="text-2xl font-semibold tabular-nums text-gray-900">{formatCurrency(totalSpent / new Date().getDate(), currency)}</div>
+          <div className="text-sm text-gray-500 mt-1">Per day</div>
         </div>
       </div>
 
-      {/* Apple-style Segmented Tabs */}
-      <div className="inline-flex rounded-xl bg-gray-50 p-1 border border-gray-200 mt-4">
-        {[
-          { key: 'category', label: 'Categories' },
-          { key: 'trends', label: 'Trends' },
-          { key: 'merchant', label: 'Merchants' },
-          { key: 'comparison', label: 'Daily' }
-        ].map(({ key, label }) => (
-          <button
-            key={key}
-            onClick={() => setActiveChart(key as any)}
-            className={`px-3 py-2 rounded-lg text-[14px] transition-all duration-200 ${
-              activeChart === key 
-                ? 'bg-white shadow font-medium text-gray-900' 
-                : 'text-gray-600'
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+      {/* Enhanced Segmented Control */}
+      <div className="mb-6">
+        <h2 className="text-xl font-semibold text-gray-900 mb-4">Analytics Dashboard</h2>
+        <div className="inline-flex rounded-2xl bg-gray-100/80 p-1.5 border border-gray-200/50">
+          {[
+            { key: 'category', label: 'Categories', icon: PieChartIcon },
+            { key: 'trends', label: 'Trends', icon: TrendingUp },
+            { key: 'merchant', label: 'Merchants', icon: ShoppingBag },
+            { key: 'comparison', label: 'Daily', icon: BarChart3 }
+          ].map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveChart(key as any)}
+              className={`flex items-center gap-2 px-4 py-3 rounded-xl text-base font-medium transition-all duration-200 ${
+                activeChart === key
+                  ? 'bg-white shadow-sm text-gray-900'
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+            >
+              <Icon size={18} />
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Chart Cards - One per row */}
-      <div className="rounded-2xl p-4 bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)] mt-4">
+      {/* Enhanced Chart Section */}
+      <div className="rounded-2xl bg-white/95 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
         {activeChart === 'category' && (
           <>
-            <h3 className="text-[16px] font-semibold text-gray-900 mb-4">Spending by Category</h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">Spending by Category</h3>
+              {categoryData.length > 0 && (
+                <div className="text-sm text-gray-500">
+                  {categoryData.length} categories
+                </div>
+              )}
+            </div>
             {categoryData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={categoryData}
-                    cx="50%"
-                    cy="50%"
-                    outerRadius={100}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {categoryData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip content={<CustomPieTooltip />} />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="space-y-6">
+                <ResponsiveContainer width="100%" height={300}>
+                  <PieChart>
+                    <Pie
+                      data={categoryData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      innerRadius={40}
+                      fill="#8884d8"
+                      dataKey="value"
+                      paddingAngle={2}
+                    >
+                      {categoryData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomPieTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+
+                {/* Category Legend */}
+                <div className="grid grid-cols-2 gap-3">
+                  {categoryData.map((category, index) => (
+                    <div key={category.name} className="flex items-center gap-3 p-3 bg-gray-50/50 rounded-xl">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: category.color }}
+                        />
+                        <span className="text-lg">{category.icon}</span>
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium text-gray-900">{category.name}</div>
+                        <div className="text-xs text-gray-500">
+                          {formatCurrency(category.value, currency)} • {((category.value / totalSpent) * 100).toFixed(0)}%
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ) : (
-              <div className="text-[13px] text-gray-500 text-center py-8">
-                No spending data available
+              <div className="text-center py-12">
+                <div className="size-16 rounded-full bg-gray-100 grid place-items-center mx-auto mb-4">
+                  <PieChartIcon size={32} className="text-gray-400" />
+                </div>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No Category Data</h4>
+                <p className="text-gray-600">Start adding transactions to see your spending breakdown</p>
               </div>
             )}
           </>
@@ -326,37 +375,149 @@ function InsightsContent() {
 
         {activeChart === 'trends' && (
           <>
-            <h3 className="text-[16px] font-semibold text-gray-900 mb-4">6-Month Trends</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={trendsData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis tickFormatter={(value) => `$${value}`} />
-                <Tooltip content={<CustomTooltip />} />
-                <Legend />
-                <Area type="monotone" dataKey="spending" stackId="1" stroke="#EF4444" fill="#FEE2E2" name="Spending" />
-                <Area type="monotone" dataKey="income" stackId="2" stroke="#10B981" fill="#DCFCE7" name="Income" />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">6-Month Financial Trends</h3>
+              <div className="text-sm text-gray-500">
+                Last 6 months
+              </div>
+            </div>
+            <div className="space-y-6">
+              <ResponsiveContainer width="100%" height={320}>
+                <AreaChart data={trendsData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                  <defs>
+                    <linearGradient id="spendingGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#EF4444" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#EF4444" stopOpacity={0.05}/>
+                    </linearGradient>
+                    <linearGradient id="incomeGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="#10B981" stopOpacity={0.05}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                  <XAxis
+                    dataKey="month"
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#6B7280', fontSize: 12 }}
+                  />
+                  <YAxis
+                    tickFormatter={(value) => `$${value}`}
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fill: '#6B7280', fontSize: 12 }}
+                  />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Area
+                    type="monotone"
+                    dataKey="income"
+                    stroke="#10B981"
+                    strokeWidth={2}
+                    fill="url(#incomeGradient)"
+                    name="Income"
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="spending"
+                    stroke="#EF4444"
+                    strokeWidth={2}
+                    fill="url(#spendingGradient)"
+                    name="Spending"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+
+              {/* Trend Analysis */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 bg-green-50/50 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp size={20} className="text-green-600" />
+                    <span className="text-sm font-medium text-green-900">Average Income</span>
+                  </div>
+                  <div className="text-lg font-semibold text-green-800">
+                    {formatCurrency(trendsData.reduce((sum, month) => sum + month.income, 0) / trendsData.length, currency)}
+                  </div>
+                </div>
+                <div className="p-4 bg-red-50/50 rounded-xl">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingDown size={20} className="text-red-600" />
+                    <span className="text-sm font-medium text-red-900">Average Spending</span>
+                  </div>
+                  <div className="text-lg font-semibold text-red-800">
+                    {formatCurrency(trendsData.reduce((sum, month) => sum + month.spending, 0) / trendsData.length, currency)}
+                  </div>
+                </div>
+              </div>
+            </div>
           </>
         )}
 
         {activeChart === 'merchant' && (
           <>
-            <h3 className="text-[16px] font-semibold text-gray-900 mb-4">Top Merchants</h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">Top Merchants</h3>
+              {merchantData.length > 0 && (
+                <div className="text-sm text-gray-500">
+                  Top {merchantData.length} merchants
+                </div>
+              )}
+            </div>
             {merchantData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={merchantData} layout="horizontal">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tickFormatter={(value) => `$${value}`} />
-                  <YAxis dataKey="merchant" type="category" width={100} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Bar dataKey="amount" fill="#3B82F6" />
-                </BarChart>
-              </ResponsiveContainer>
+              <div className="space-y-6">
+                {/* Merchant List with Visual Bars */}
+                <div className="space-y-3">
+                  {merchantData.map((merchant, index) => {
+                    const percentage = (merchant.amount / merchantData[0].amount) * 100;
+                    return (
+                      <div key={merchant.merchant} className="p-4 bg-gray-50/50 rounded-xl">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <div className="size-8 rounded-full bg-blue-100 grid place-items-center text-blue-600 text-sm font-bold">
+                              {index + 1}
+                            </div>
+                            <span className="font-medium text-gray-900 truncate">{merchant.merchant}</span>
+                          </div>
+                          <span className="font-semibold text-gray-900">
+                            {formatCurrency(merchant.amount, currency)}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200/50 rounded-full h-2">
+                          <div
+                            className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500"
+                            style={{ width: `${percentage}%` }}
+                          />
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">
+                          {((merchant.amount / totalSpent) * 100).toFixed(1)}% of total spending
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Merchant Insights */}
+                <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-200/50">
+                  <div className="flex items-start gap-3">
+                    <div className="size-8 rounded-full bg-blue-500 grid place-items-center text-white text-lg flex-shrink-0">
+                      💡
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-blue-900 mb-1">Spending Insight</h4>
+                      <p className="text-sm text-blue-700">
+                        Your top 3 merchants account for {formatCurrency(merchantData.slice(0, 3).reduce((sum, m) => sum + m.amount, 0), currency)}
+                        ({((merchantData.slice(0, 3).reduce((sum, m) => sum + m.amount, 0) / totalSpent) * 100).toFixed(0)}%) of your total spending.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : (
-              <div className="text-[13px] text-gray-500 text-center py-8">
-                No merchant data available
+              <div className="text-center py-12">
+                <div className="size-16 rounded-full bg-gray-100 grid place-items-center mx-auto mb-4">
+                  <ShoppingBag size={32} className="text-gray-400" />
+                </div>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No Merchant Data</h4>
+                <p className="text-gray-600">Add merchant names to your transactions to see where you spend most</p>
               </div>
             )}
           </>
@@ -364,94 +525,231 @@ function InsightsContent() {
 
         {activeChart === 'comparison' && (
           <>
-            <h3 className="text-[16px] font-semibold text-gray-900 mb-4">Daily Spending Pattern</h3>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-semibold text-gray-900">Daily Spending Pattern</h3>
+              <div className="text-sm text-gray-500">
+                {monthDisplay}
+              </div>
+            </div>
             {dailySpending.length > 0 ? (
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={dailySpending}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
-                  <YAxis tickFormatter={(value) => `$${value}`} />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Line type="monotone" dataKey="amount" stroke="#8B5CF6" strokeWidth={2} dot={{ fill: '#8B5CF6' }} />
-                </LineChart>
-              </ResponsiveContainer>
+              <div className="space-y-6">
+                <ResponsiveContainer width="100%" height={300}>
+                  <LineChart data={dailySpending} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="dailyGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#8B5CF6" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#8B5CF6" stopOpacity={0.05}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                    <XAxis
+                      dataKey="day"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#6B7280', fontSize: 12 }}
+                    />
+                    <YAxis
+                      tickFormatter={(value) => `$${value}`}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#6B7280', fontSize: 12 }}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                    <Line
+                      type="monotone"
+                      dataKey="amount"
+                      stroke="#8B5CF6"
+                      strokeWidth={3}
+                      dot={{ fill: '#8B5CF6', strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: '#8B5CF6', strokeWidth: 2 }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+
+                {/* Daily Insights */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-purple-50/50 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="size-6 rounded-full bg-purple-500 grid place-items-center text-white text-xs">📊</div>
+                      <span className="text-sm font-medium text-purple-900">Highest Day</span>
+                    </div>
+                    <div className="text-lg font-semibold text-purple-800">
+                      Day {dailySpending.reduce((max, day) => day.amount > max.amount ? day : max).day}: {formatCurrency(dailySpending.reduce((max, day) => day.amount > max.amount ? day : max).amount, currency)}
+                    </div>
+                  </div>
+                  <div className="p-4 bg-indigo-50/50 rounded-xl">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="size-6 rounded-full bg-indigo-500 grid place-items-center text-white text-xs">📈</div>
+                      <span className="text-sm font-medium text-indigo-900">Days Active</span>
+                    </div>
+                    <div className="text-lg font-semibold text-indigo-800">
+                      {dailySpending.length} of {new Date().getDate()} days
+                    </div>
+                  </div>
+                </div>
+              </div>
             ) : (
-              <div className="text-[13px] text-gray-500 text-center py-8">
-                No daily spending data available
+              <div className="text-center py-12">
+                <div className="size-16 rounded-full bg-gray-100 grid place-items-center mx-auto mb-4">
+                  <BarChart3 size={32} className="text-gray-400" />
+                </div>
+                <h4 className="text-lg font-medium text-gray-900 mb-2">No Daily Data</h4>
+                <p className="text-gray-600">Add some transactions to see your daily spending patterns</p>
               </div>
             )}
           </>
         )}
       </div>
 
-      {/* Category Details below the chart */}
-      {activeChart === 'category' && categoryData.length > 0 && (
-        <div className="rounded-2xl p-4 bg-white border border-gray-100 shadow-[0_8px_30px_rgba(0,0,0,0.06)]">
-          <h3 className="text-[16px] font-semibold text-gray-900 mb-4">Category Details</h3>
+      {/* Smart Financial Insights */}
+      {transactions.length > 0 && (
+        <div className="rounded-2xl bg-white/95 backdrop-blur border border-gray-100/50 shadow-lg shadow-gray-900/5 p-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6">Financial Insights</h3>
           <div className="space-y-4">
-            {categoryData.map((category, index) => (
-              <div key={category.name} className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: category.color }}
-                  />
+            {/* Budget Performance */}
+            {totalBudget > 0 && (
+              <div className={`p-4 rounded-xl border ${
+                budgetUsed > 100 ? 'bg-red-50/50 border-red-200/50' :
+                budgetUsed > 80 ? 'bg-orange-50/50 border-orange-200/50' :
+                'bg-green-50/50 border-green-200/50'
+              }`}>
+                <div className="flex items-start gap-3">
+                  <div className={`size-8 rounded-full grid place-items-center text-lg flex-shrink-0 ${
+                    budgetUsed > 100 ? 'bg-red-100 text-red-600' :
+                    budgetUsed > 80 ? 'bg-orange-100 text-orange-600' :
+                    'bg-green-100 text-green-600'
+                  }`}>
+                    {budgetUsed > 100 ? '⚠️' : budgetUsed > 80 ? '⚡' : '✅'}
+                  </div>
                   <div>
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm">{category.icon}</span>
-                      <span className="font-medium text-sm">{category.name}</span>
-                    </div>
-                    {category.budget > 0 && (
-                      <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
-                        <div
-                          className="bg-blue-600 h-1.5 rounded-full"
-                          style={{ width: `${Math.min((category.value / category.budget) * 100, 100)}%` }}
-                        />
-                      </div>
-                    )}
+                    <h4 className={`text-sm font-medium mb-1 ${
+                      budgetUsed > 100 ? 'text-red-900' :
+                      budgetUsed > 80 ? 'text-orange-900' :
+                      'text-green-900'
+                    }`}>
+                      {budgetUsed > 100 ? 'Over Budget Alert' :
+                       budgetUsed > 80 ? 'Approaching Budget Limit' :
+                       'Budget on Track'}
+                    </h4>
+                    <p className={`text-sm ${
+                      budgetUsed > 100 ? 'text-red-700' :
+                      budgetUsed > 80 ? 'text-orange-700' :
+                      'text-green-700'
+                    }`}>
+                      {budgetUsed > 100
+                        ? `You've exceeded your budget by ${formatCurrency(totalSpent - totalBudget, currency)}. Consider reviewing your spending.`
+                        : budgetUsed > 80
+                        ? `You've used ${Math.round(budgetUsed)}% of your budget. You have ${formatCurrency(totalBudget - totalSpent, currency)} remaining.`
+                        : `Great job! You're using ${Math.round(budgetUsed)}% of your budget with ${formatCurrency(totalBudget - totalSpent, currency)} remaining.`
+                      }
+                    </p>
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-sm">{formatCurrency(category.value, currency)}</p>
-                  {category.budget > 0 && (
-                    <p className="text-xs text-gray-500">
-                      {Math.round((category.value / category.budget) * 100)}%
+              </div>
+            )}
+
+            {/* Spending Pattern Insight */}
+            {categoryData.length > 0 && (
+              <div className="p-4 bg-blue-50/50 rounded-xl border border-blue-200/50">
+                <div className="flex items-start gap-3">
+                  <div className="size-8 rounded-full bg-blue-500 grid place-items-center text-white text-lg flex-shrink-0">
+                    📊
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-blue-900 mb-1">Spending Pattern</h4>
+                    <p className="text-sm text-blue-700">
+                      Your largest expense category is <strong>{categoryData[0].name}</strong> at {formatCurrency(categoryData[0].value, currency)}
+                      ({((categoryData[0].value / totalSpent) * 100).toFixed(0)}% of total spending).
+                      {categoryData.length > 1 && (
+                        <> Your top 3 categories account for {((categoryData.slice(0, 3).reduce((sum, cat) => sum + cat.value, 0) / totalSpent) * 100).toFixed(0)}% of your spending.</>
+                      )}
                     </p>
-                  )}
+                  </div>
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Transaction Frequency */}
+            <div className="p-4 bg-purple-50/50 rounded-xl border border-purple-200/50">
+              <div className="flex items-start gap-3">
+                <div className="size-8 rounded-full bg-purple-500 grid place-items-center text-white text-lg flex-shrink-0">
+                  📈
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-purple-900 mb-1">Activity Level</h4>
+                  <p className="text-sm text-purple-700">
+                    You've made {transactions.filter(t => t.occurred_at.startsWith(currentMonth)).length} transactions this month
+                    (avg {(transactions.filter(t => t.occurred_at.startsWith(currentMonth)).length / new Date().getDate()).toFixed(1)} per day).
+                    Your average transaction amount is {formatCurrency(totalSpent / transactions.filter(t => t.occurred_at.startsWith(currentMonth) && t.direction === 'outflow').length || 0, currency)}.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Budget Progress */}
-      {totalBudget > 0 && (
-        <div className="rounded-2xl p-4 bg-white border border-gray-100 shadow mt-4">
-          <h3 className="text-[16px] font-semibold text-gray-900 mb-2">Budget Progress</h3>
+      {/* Actionable Recommendations */}
+      {transactions.length > 0 && (
+        <div className="rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-100/50 p-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6">Smart Recommendations</h3>
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-700">Monthly Budget</span>
-              <span className="font-semibold">{formatCurrency(totalBudget, currency)}</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-4">
-              <div
-                className={`h-4 rounded-full ${
-                  budgetUsed > 100 ? 'bg-red-500' : budgetUsed > 80 ? 'bg-yellow-500' : 'bg-green-500'
-                }`}
-                style={{ width: `${Math.min(budgetUsed, 100)}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-gray-600">
-                Spent: {formatCurrency(totalSpent, currency)}
-              </span>
-              <span className={`font-medium ${budgetUsed > 100 ? 'text-red-600' : 'text-green-600'}`}>
-                {budgetUsed > 100 
-                  ? `${formatCurrency(totalSpent - totalBudget, currency)} over budget`
-                  : `${formatCurrency(totalBudget - totalSpent, currency)} remaining`
-                }
-              </span>
+            {/* Budget recommendation */}
+            {budgetUsed > 90 && (
+              <div className="flex items-start gap-3 p-4 bg-white/70 rounded-xl">
+                <div className="size-8 rounded-full bg-orange-500 grid place-items-center text-white text-lg flex-shrink-0">
+                  🎯
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-1">Budget Alert</h4>
+                  <p className="text-sm text-gray-700">
+                    Consider reducing spending in your top categories for the rest of the month.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Savings opportunity */}
+            {categoryData.length > 0 && categoryData[0].value > totalSpent * 0.4 && (
+              <div className="flex items-start gap-3 p-4 bg-white/70 rounded-xl">
+                <div className="size-8 rounded-full bg-green-500 grid place-items-center text-white text-lg flex-shrink-0">
+                  💡
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-1">Savings Opportunity</h4>
+                  <p className="text-sm text-gray-700">
+                    {categoryData[0].name} represents a large portion of your spending. Consider setting a specific budget for this category.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Transaction frequency insight */}
+            {transactions.filter(t => t.occurred_at.startsWith(currentMonth)).length > 50 && (
+              <div className="flex items-start gap-3 p-4 bg-white/70 rounded-xl">
+                <div className="size-8 rounded-full bg-blue-500 grid place-items-center text-white text-lg flex-shrink-0">
+                  📱
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 mb-1">High Activity</h4>
+                  <p className="text-sm text-gray-700">
+                    You have many small transactions. Consider consolidating purchases to reduce fees and improve tracking.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* General tip */}
+            <div className="flex items-start gap-3 p-4 bg-white/70 rounded-xl">
+              <div className="size-8 rounded-full bg-purple-500 grid place-items-center text-white text-lg flex-shrink-0">
+                ⭐
+              </div>
+              <div>
+                <h4 className="text-sm font-medium text-gray-900 mb-1">Pro Tip</h4>
+                <p className="text-sm text-gray-700">
+                  Review your insights weekly to spot trends early and make informed financial decisions.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -469,13 +767,13 @@ export default function InsightsPage() {
   };
 
   return (
-    <>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100">
       <Screen>
         <InsightsContent />
       </Screen>
 
       <BottomDock onAdd={handleAddTransaction} />
-      
+
       {currentHousehold && (
         <AddTransactionModal
           isOpen={showAddTransaction}
@@ -484,6 +782,6 @@ export default function InsightsPage() {
           onSuccess={() => setShowAddTransaction(false)}
         />
       )}
-    </>
+    </div>
   );
 }
